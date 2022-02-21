@@ -1,0 +1,25 @@
+{"1.2.0",
+[{<<"argparse">>,{pkg,<<"argparse">>,<<"1.1.4">>},1},
+ {<<"aten">>,{pkg,<<"aten">>,<<"0.5.7">>},2},
+ {<<"erlperf">>,
+  {git,"https://github.com/max-au/erlperf.git",
+       {ref,"4e8a99fb690aa2020ba14314ce343128f2e97084"}},
+  0},
+ {<<"gen_batch_server">>,{pkg,<<"gen_batch_server">>,<<"0.8.7">>},2},
+ {<<"khepri">>,
+  {git,"https://github.com/rabbitmq/khepri.git",
+       {ref,"698c773a98ad92f79200f2e7ef5489646daf2abc"}},
+  0},
+ {<<"ra">>,{pkg,<<"ra">>,<<"2.0.4">>},1}]}.
+[
+{pkg_hash,[
+ {<<"argparse">>, <<"A9F83748FABB1AF2A329484434E542FA02ADE6B6FEE58F5EDA15E3E471359992">>},
+ {<<"aten">>, <<"F88EB38CEADC0710B84B5D78F0357D766733D80902D50AC69B70CDF834992DAA">>},
+ {<<"gen_batch_server">>, <<"1D91A3605D3110EC791F00D5968E86E62FD4C6979E760796A51D50A7ACC7A40D">>},
+ {<<"ra">>, <<"9EF24AF930C699BCCB12516CA91DB8255093E4DF560BAF54C65D45372E73639E">>}]},
+{pkg_hash_ext,[
+ {<<"argparse">>, <<"AC825D3B52CA64F25A4867D70324FBE940ED9BFC2CB9C8826E0B88D7BF7F73F3">>},
+ {<<"aten">>, <<"8B623C8BE27B59A911D16AB0AF41777B504C147BC0D60A29015FAB58321C04B0">>},
+ {<<"gen_batch_server">>, <<"94A49A528486298B009D2A1B452132C0A0D68B3E89D17D3764CB1EC879B7557A">>},
+ {<<"ra">>, <<"8E3550BE1DF23B5B1BA9D02E0C8C79FEBB8EAE8A6DCBBBA746BD5180F39AEE1C">>}]}
+].

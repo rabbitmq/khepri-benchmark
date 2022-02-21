@@ -1,0 +1,33 @@
+name: Benchmark
+
+on:
+  push:
+    branches:
+      - 'main'
+
+  repository_dispatch:
+    types: [push-in-khepri]
+
+jobs:
+  Benchmark:
+    name: Benchmark Khepri
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: 24
+
+      - name: Compile
+        run: rebar3 escriptize
+
+      - name: Benchmark
+        run: _build/default/bin/khepri-benchmark
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
