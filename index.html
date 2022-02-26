@@ -1,73 +1,202 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-  <head>
-  <title>Khepri benchmark report</title>
-  <meta charset="utf-8">
-  <meta http-equiv="content-type" content="text/html; charset=utf8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  
-    <link rel="stylesheet" type="text/css" href="assets/stylesheets/benchee.css">
-    <link rel="stylesheet" type="text/css" href="assets/fontello/css/fontello.css">
-  
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"
+        integrity="sha512-wnea99uKIC3TJF7v4eKk4Y+lMz2Mklv18+r4na2Gn1abDRPPOeef95xTzdwGD9e6zXJBteMIhZ1+68QC5byJZw=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"
+          integrity="sha512-QSkVNOCYLtj73J4hbmVoOV6KVZuMluZlioC+trLpewV8qMjsWqlIQvkn1KGX2StWvPMdWGBqim1xlC8krl1EKQ=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"></script>
+  <script>
+    const workers = [1, 50, 500];
+
+    const insert_khepri_safe = [2697, 19659, 55864];
+    const insert_khepri_unsafe = [11212, 50539, 59902];
+    const insert_mnesia = [25808, 44960, 46329];
+
+    const insert_clustered_khepri_safe = [662, 3502, 5683];
+    const insert_clustered_khepri_unsafe = [974, 3823, 5742];
+    const insert_clustered_mnesia = [1412, 4459, 5369];
+
+    const delete_khepri_safe = [3159, 20775, 80597];
+    const delete_khepri_unsafe = [13914, 70340, 76505];
+    const delete_mnesia = [26720, 45720, 48026];
+
+    const delete_clustered_khepri_safe = [647, 3737, 7211];
+    const delete_clustered_khepri_unsafe = [951, 4128, 6340];
+    const delete_clustered_mnesia = [1358, 4718, 5557];
+
+    const labels = [];
+	      console.log(workers);
+    for (var i in workers) {
+      const worker = workers[i];
+      labels.push(worker.toString() + ' workers');
+    }
+
+    const datasets = [
+      {
+        label: 'Khepri (safe)',
+        borderColor: 'rgb(75, 192, 192)', // green
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4
+      }, {
+        label: 'Khepri (unsafe)',
+        borderColor: 'rgb(54, 162, 235)', // blue
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4
+      }, {
+        label: 'Mnesia',
+        borderColor: 'rgb(255, 99, 132)', // red
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4
+      }
+    ];
+
+    var insert_datasets = JSON.parse(JSON.stringify(datasets));
+    insert_datasets[0].data = insert_khepri_safe;
+    insert_datasets[1].data = insert_khepri_unsafe;
+    insert_datasets[2].data = insert_mnesia;
+
+    const insert_data = {
+      labels: labels,
+      datasets: insert_datasets
+    };
+
+    var insert_clustered_datasets = JSON.parse(JSON.stringify(datasets));
+    insert_clustered_datasets[0].data = insert_clustered_khepri_safe;
+    insert_clustered_datasets[1].data = insert_clustered_khepri_unsafe;
+    insert_clustered_datasets[2].data = insert_clustered_mnesia;
+
+    const insert_clustered_data = {
+      labels: labels,
+      datasets: insert_clustered_datasets
+    };
+
+    var delete_datasets = JSON.parse(JSON.stringify(datasets));
+    delete_datasets[0].data = delete_khepri_safe;
+    delete_datasets[1].data = delete_khepri_unsafe;
+    delete_datasets[2].data = delete_mnesia;
+
+    const delete_data = {
+      labels: labels,
+      datasets: delete_datasets
+    };
+
+    var delete_clustered_datasets = JSON.parse(JSON.stringify(datasets));
+    delete_clustered_datasets[0].data = delete_clustered_khepri_safe;
+    delete_clustered_datasets[1].data = delete_clustered_khepri_unsafe;
+    delete_clustered_datasets[2].data = delete_clustered_mnesia;
+
+    const delete_clustered_data = {
+      labels: labels,
+      datasets: delete_clustered_datasets
+    };
+
+    const config = {
+      type: 'line',
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: false,
+          },
+          legend: {
+            labels: {
+              //color: 'rgb(209, 213, 219)',
+            },
+          },
+        },
+        interaction: {
+          intersect: false,
+        },
+        scales: {
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Concurrent workers',
+              //color: 'rgb(209, 213, 219)',
+            }
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Operation per second',
+              //color: 'rgb(209, 213, 219)',
+            },
+            suggestedMin: 0,
+          }
+        }
+      },
+    };
+
+    const insert_config = {
+      ...config,
+      ...{ data: insert_data }
+    };
+
+    const insert_clustered_config = {
+      ...config,
+      ...{ data: insert_clustered_data }
+    };
+
+    const delete_config = {
+      ...config,
+      ...{ data: delete_data }
+    };
+
+    const delete_clustered_config = {
+      ...config,
+      ...{ data: delete_clustered_data }
+    };
+  </script>
 </head>
-
-  <body>
-
-    <div class="header">
-      <h1>Khepri benchmark report</h1>
-      <span class="version-note">
-  <a href="javascript:toggleSystemDataInfo();" title="Click to toggle system info">System info</a>
-</span>
-
+<body>
+  <div class="container mx-auto mt-4">
+    <h1 class="text-5xl font-bold text-center mb-16">Khepri benchmark</h1>
+    <div class="flex flex-wrap gap-x-4 gap-y-32">
+      <div class="w-5/12 h-96 flex-1">
+        <h2 class="text-2xl font-bold text-center mb-6">Inserts (unclustered)</h2>
+        <canvas id="insert_chart"></canvas>
+        <script>
+          const insert_ctx = document.getElementById('insert_chart');
+          const insert_chart = new Chart(insert_ctx, insert_config);
+        </script>
+      </div>
+      <div class="w-5/12 h-96 flex-1">
+        <h2 class="text-2xl font-bold text-center mb-6">Inserts (3-node cluster)</h2>
+        <canvas id="insert_clustered_chart"></canvas>
+        <script>
+          const insert_clustered_ctx = document.getElementById('insert_clustered_chart');
+          const insert_clustered_chart = new Chart(insert_clustered_ctx, insert_clustered_config);
+        </script>
+      </div>
+      <div class="w-5/12 h-96 flex-1">
+        <h2 class="text-2xl font-bold text-center mb-6">Deletes (unclustered)</h2>
+        <canvas id="delete_chart"></canvas>
+        <script>
+          const delete_ctx = document.getElementById('delete_chart');
+          const delete_chart = new Chart(delete_ctx, delete_config);
+        </script>
+      </div>
+      <div class="w-5/12 h-96 flex-1">
+        <h2 class="text-2xl font-bold text-center mb-6">Deletes (3-node cluster)</h2>
+        <canvas id="delete_clustered_chart"></canvas>
+        <script>
+          const delete_clustered_ctx = document.getElementById('delete_clustered_chart');
+          const delete_clustered_chart = new Chart(delete_clustered_ctx, delete_clustered_config);
+        </script>
+      </div>
     </div>
-
-    <article id="system-info" class="benchee-systeminfo" style="display: block;">
-  <h3>System info</h3>
-  <ul class="benchee-systeminfo-list">
-    <li>Elixir: 1.13.3</li>
-    <li>Erlang: 24.2.1</li>
-    <li>Operating system: Linux</li>
-    <li>Available memory: 6.78 GB</li>
-    <li>CPU Information: Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz</li>
-    <li>Number of Available Cores: 2</li>
-  </ul>
-</article>
-
-
-    <article>
-      
-        <section>
-          
-
-          <ul>
-            
-              <li><a href="benchmark_comparison.html"> benchmark_comparison.html </a></li>
-            
-              <li><a href="benchmark_inserts_in_mnesia.html"> benchmark_inserts_in_mnesia.html </a></li>
-            
-              <li><a href="benchmark_inserts_in_khepri__fast_.html"> benchmark_inserts_in_khepri__fast_.html </a></li>
-            
-              <li><a href="benchmark_inserts_in_khepri__default_.html"> benchmark_inserts_in_khepri__default_.html </a></li>
-            
-          </ul>
-        </section>
-
-      
-
-    </article>
-
-    <footer>
-      <a href="https://github.com/PragTob/benchee" target="blank">benchee version: 1.0.1 </a>
-<br/>
-<a href="https://github.com/PragTob/benchee_html" target="blank">benchee_html version: 1.0.0</a>
-
-
-    </footer>
-
-    
-  <script src="assets/javascripts/plotly-1.30.1.min.js"></script>
-  <script src="assets/javascripts/benchee.js"></script>
-
-
-  </body>
+  </div>
+</body>
 </html>
