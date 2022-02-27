@@ -15,24 +15,23 @@
   <script>
     const workers = [1, 50, 500];
 
-    const insert_khepri_safe = [2697, 19659, 55864];
-    const insert_khepri_unsafe = [11212, 50539, 59902];
-    const insert_mnesia = [25808, 44960, 46329];
+    const insert_khepri_safe = [5306, 23894, 64367];
+    const insert_khepri_unsafe = [19505, 61574, 60846];
+    const insert_mnesia = [34758, 56426, 58706];
 
-    const insert_clustered_khepri_safe = [662, 3502, 5683];
-    const insert_clustered_khepri_unsafe = [974, 3823, 5742];
-    const insert_clustered_mnesia = [1412, 4459, 5369];
+    const insert_clustered_khepri_safe = [925, 4643, 7289];
+    const insert_clustered_khepri_unsafe = [1186, 4759, 6585];
+    const insert_clustered_mnesia = [2258, 5810, 6825];
 
-    const delete_khepri_safe = [3159, 20775, 80597];
-    const delete_khepri_unsafe = [13914, 70340, 76505];
-    const delete_mnesia = [26720, 45720, 48026];
+    const delete_khepri_safe = [6300, 33980, 99802];
+    const delete_khepri_unsafe = [25390, 85341, 93946];
+    const delete_mnesia = [36014, 55772, 57575];
 
-    const delete_clustered_khepri_safe = [647, 3737, 7211];
-    const delete_clustered_khepri_unsafe = [951, 4128, 6340];
-    const delete_clustered_mnesia = [1358, 4718, 5557];
+    const delete_clustered_khepri_safe = [935, 5271, 8398];
+    const delete_clustered_khepri_unsafe = [1210, 5313, 7429];
+    const delete_clustered_mnesia = [2025, 6113, 7163];
 
     const labels = [];
-	      console.log(workers);
     for (var i in workers) {
       const worker = workers[i];
       labels.push(worker.toString() + ' workers');
