@@ -54,62 +54,40 @@ run() ->
        khepri_benchmark_mnesia:delete_benchmark(SingleNode)]}
      | ClusterBenchmarks],
 
-    NoConcurrency = #{
-                      name => "no concurrency",
-                      run_options => #{warmup => 1,
-                                       samples => 5}
-                     },
-    Concurrency50 = #{
-                      name => "50 concurrent workers",
-                      run_options => #{warmup => 2,
-                                       samples => 5,
-                                       concurrency => 50}
-                     },
-    Concurrency500 = #{
-                       name => "500 concurrent workers",
-                       run_options => #{warmup => 5,
-                                        samples => 5,
-                                        concurrency => 500}
-                      },
-    Conditions = [NoConcurrency, Concurrency50, Concurrency500],
+    RunOptions = #{warmup => 1,
+                   samples => 3,
+                   report => extended},
+    ConcurrencyOptions = #{min => 1,
+                           max => 200,
+                           threshold => 500,
+                           multiple_of => 10},
 
-    Results = run_benchmarks(Benchmarks, Conditions),
+    Results = run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions),
 
-    io:format("~p~n", [Results]),
     khepri_benchmark_output:print_results(Results),
-    khepri_benchmark_output:generate_html(Conditions, Results),
+    khepri_benchmark_output:generate_html(Results),
 
     khepri_benchmark_utils:cleanup_cluster(),
     ok.
 
-run_benchmarks(Benchmarks, Conditions) ->
-    run_benchmarks(Benchmarks, Conditions, []).
+run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions) ->
+    run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions, []).
 
-run_benchmarks([{Name, Benchmarks} | Rest], Conditions, Results) ->
-    io:format("~nBenchmarking: ~ts", [Name]),
-    Result = run_with_conditions(Benchmarks, Conditions, []),
+run_benchmarks(
+  [{Name, Benchmarks} | Rest], RunOptions, ConcurrencyOptions, Results) ->
+    io:format("~nBenchmarking ~ts:", [Name]),
+    Result = run_benchmarks1(Benchmarks, RunOptions, ConcurrencyOptions, []),
     Results1 = [{Name, Result} | Results],
-    run_benchmarks(Rest, Conditions, Results1);
-run_benchmarks([], _Conditions, Results) ->
+    run_benchmarks(Rest, RunOptions, ConcurrencyOptions, Results1);
+run_benchmarks([], _RunOptions, _ConcurrencyOptions, Results) ->
     lists:reverse(Results).
 
-run_with_conditions(
-  Benchmarks,
-  [#{name := Name, run_options := RunOptions} | Rest],
-  Results) ->
-    io:format("~n  ~ts:", [Name]),
-    Result = run_with_run_options(Benchmarks, RunOptions, []),
-    Results1 = [{Name, Result} | Results],
-    run_with_conditions(Benchmarks, Rest, Results1);
-run_with_conditions(_Benchmarks, [], Results) ->
-    lists:reverse(Results).
-
-run_with_run_options(
+run_benchmarks1(
   [#{name := Name} = Benchmark | Rest],
-  RunOptions, Results) ->
+  RunOptions, ConcurrencyOptions, Results) ->
     io:format(" ~ts...", [Name]),
-    Result = erlperf:run(Benchmark, RunOptions),
-    Results1 = [{Name, Result} | Results],
-    run_with_run_options(Rest, RunOptions, Results1);
-run_with_run_options([], _RunOptions, Results) ->
+    {_Max, Result} = erlperf:run(Benchmark, RunOptions, ConcurrencyOptions),
+    Results1 = [{Name, lists:reverse(Result)} | Results],
+    run_benchmarks1(Rest, RunOptions, ConcurrencyOptions, Results1);
+run_benchmarks1([], _RunOptions, _ConcurrencyOptions, Results) ->
     lists:reverse(Results).

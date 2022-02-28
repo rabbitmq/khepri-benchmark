@@ -8,52 +8,73 @@
 -module(khepri_benchmark_output).
 
 -export([print_results/1,
-         generate_html/2]).
+         generate_html/1]).
 
 print_results(Results) ->
     io:format("~n"),
     print_results1(Results).
 
-print_results1([{Category, Results} | Rest]) ->
+print_results1([{Category, CategoryResults} | Rest] = Results) ->
+    Workers = tested_workers(Results),
+    WantedConcurrency = [Concurrency
+                         || Concurrency <- [1, 50, 100, lists:max(Workers)],
+                            lists:member(Concurrency, Workers)],
+    CategoryResults1 = [{Backend,
+                         [{average(Scores), Concurrency}
+                          || {Scores, Concurrency} <- BackendResults,
+                             lists:member(Concurrency, WantedConcurrency)]}
+                        || {Backend, BackendResults} <- CategoryResults],
+
     {MaxLabelLen, MaxValue} =
     lists:foldl(
-      fun({_Condition, InnerResults}, Acc) ->
-              lists:foldl(
-                fun({Backend, Result}, {MLL, MV}) ->
-                        Len = string:length(Backend),
-                        MLL1 = if
-                                   Len > MLL -> Len;
-                                   true      -> MLL
-                               end,
-                        MV1 = if
-                                  Result > MV -> Result;
-                                  true        -> MV
-                              end,
-                        {MLL1, MV1}
-                end, Acc, InnerResults)
-      end, {0, 0}, Results),
+      fun({Backend, BackendResults}, {MLL, MV}) ->
+              Len = string:length(Backend),
+              MLL1 = if
+                         Len > MLL -> Len;
+                         true      -> MLL
+                     end,
+              Score = lists:max(
+                        [AvgScore
+                         || {AvgScore, _Concurrency} <- BackendResults]),
+              MV1 = if
+                        Score > MV -> Score;
+                        true       -> MV
+                    end,
+              {MLL1, MV1}
+      end, {0, 0}, CategoryResults1),
 
     io:format("~n~n"),
-    print_category(Category, Results, MaxLabelLen, MaxValue),
+    lists:foreach(
+      fun(Concurrency) ->
+              print_category(
+                Category, CategoryResults1, Concurrency,
+                MaxLabelLen, MaxValue)
+      end, WantedConcurrency),
     print_results1(Rest);
 print_results1([]) ->
     ok.
 
 print_category(
-  Category, [{Condition, Results} | Rest], MaxLabelLen, MaxValue) ->
-    io:format("~n\033[1m~ts, ~ts\033[0m~n", [Category, Condition]),
-    print_diagram(Results, MaxLabelLen, MaxValue),
-    print_category(Category, Rest, MaxLabelLen, MaxValue);
-print_category(_Category, [], _MaxLabelLen, _MaxValue) ->
-    ok.
+  Category, CategoryResults,
+  Concurrency, MaxLabelLen, MaxValue) ->
+    ConcurrencyLabel = case Concurrency of
+                           1 -> "no concurrency";
+                           _ -> lists:flatten(
+                                  io_lib:format("~b concurrent workers",
+                                                [Concurrency]))
+                       end,
+    io:format("~n\033[1m~ts, ~ts\033[0m~n", [Category, ConcurrencyLabel]),
+    print_diagram(CategoryResults, Concurrency, MaxLabelLen, MaxValue).
 
-print_diagram([{Backend, Result} | Rest], MaxLabelLen, MaxValue) ->
+print_diagram(
+  [{Backend, BackendResults} | Rest], Concurrency, MaxLabelLen, MaxValue) ->
+    {AvgScore, Concurrency} = lists:keyfind(Concurrency, 2, BackendResults),
     io:format(
       "    ~*.. ts: ~s~*..■s\033[0m ~b ops/s~n",
       [MaxLabelLen, Backend, backend_color(Backend),
-       ceil(50 * Result / MaxValue), "", Result]),
-    print_diagram(Rest, MaxLabelLen, MaxValue);
-print_diagram([], _MaxLabelLen, _MaxValue) ->
+       ceil(50 * AvgScore / MaxValue), "", AvgScore]),
+    print_diagram(Rest, Concurrency, MaxLabelLen, MaxValue);
+print_diagram([], _Concurrency, _MaxLabelLen, _MaxValue) ->
     ok.
 
 backend_color("Mnesia") -> "\033[38;2;188;71;73m";
@@ -61,7 +82,7 @@ backend_color("Khepri (safe)") -> "\033[38;2;204;255;51m";
 backend_color("Khepri (unsafe)") -> "\033[38;2;56;176;0m";
 backend_color(_) -> "".
 
-generate_html(Conditions, Results) ->
+generate_html(Results) ->
     Filename = case khepri_benchmark_utils:runs_from_escript() of
                    true ->
                        %% Escript already uncompressed to setup cluster.
@@ -77,8 +98,7 @@ generate_html(Conditions, Results) ->
                end,
     {ok, Template} = file:read_file(Filename),
 
-    Workers = [maps:get(concurrency, RunOptions, 1)
-               || #{run_options := RunOptions} <- Conditions],
+    Workers = tested_workers(Results),
 
     InsertKhepriSafe = collect_scores(Results, "Inserts", "Khepri (safe)"),
     InsertKhepriUnafe = collect_scores(Results, "Inserts", "Khepri (unsafe)"),
@@ -148,13 +168,13 @@ generate_html(Conditions, Results) ->
     ok = file:write_file(TargetFile, Content13),
     Results.
 
-collect_scores([{Category, Results} | _Rest], Category, Label) ->
-    [proplists:get_value(Label, Result)
-     || {_Condition, Result} <- Results];
-collect_scores([_ | Rest], Category, Label) ->
-    collect_scores(Rest, Category, Label);
-collect_scores([], _, _) ->
-    [].
+collect_scores(Results, WantedCategory, WantedBackend) ->
+    [average(Scores)
+     || {Category, CategoryResults} <- Results,
+        Category =:= WantedCategory,
+        {Backend, BackendResults} <- CategoryResults,
+        Backend =:= WantedBackend,
+        {Scores, _Concurrency} <- BackendResults].
 
 replace_list(Content, Var, List) ->
     List1 = string:join([integer_to_list(I) || I <- List], ", "),
@@ -162,3 +182,12 @@ replace_list(Content, Var, List) ->
       Content,
       Var ++ " = \\[\\]",
       Var ++ " = [" ++ List1 ++ "]").
+
+tested_workers(Results) ->
+    [Concurrency
+     || {_Category, CategoryResults} <- [hd(Results)],
+        {_Backend, BackendResults} <- [hd(CategoryResults)],
+        {_Scores, Concurrency} <- BackendResults].
+
+average(Scores) ->
+    lists:sum(Scores) div length(Scores).
