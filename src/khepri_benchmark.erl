@@ -59,7 +59,7 @@ run() ->
                    samples => 3,
                    report => extended},
     ConcurrencyOptions = #{min => 1,
-                           max => 10, % 200 XXX
+                           max => 200,
                            threshold => 500,
                            multiple_of => 10},
 
