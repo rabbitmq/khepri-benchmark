@@ -13,23 +13,23 @@
           crossorigin="anonymous"
           referrerpolicy="no-referrer"></script>
   <script>
-    const workers = [1, 10];
+    const workers = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200];
 
-    const insert_khepri_safe = [2557, 10778];
-    const insert_khepri_unsafe = [20106, 38142];
-    const insert_mnesia = [36612, 48478];
+    const insert_khepri_safe = [1688, 6694, 9130, 10618, 11001, 14827, 16428, 18352, 21324, 20612, 24393, 25652, 24763, 27525, 30869, 30857, 31015, 33071, 34342, 32744, 28861];
+    const insert_khepri_unsafe = [9712, 23882, 31438, 36386, 37828, 40247, 41206, 23208, 43595, 45246, 46080, 45823, 45939, 24165, 48256, 47661, 48577, 48657, 35062, 50096, 49326];
+    const insert_mnesia = [20857, 33483, 33250, 35567, 36813, 38582, 39213, 40541, 41041, 42122, 40989, 41441, 42329, 40830, 40872, 38772, 38870, 37117, 40830, 40674, 38843];
 
-    const insert_clustered_khepri_safe = [1042, 2492];
-    const insert_clustered_khepri_unsafe = [1456, 2844];
-    const insert_clustered_mnesia = [2430, 4293];
+    const insert_clustered_khepri_safe = [594, 1770, 2323, 2698, 3021, 2937, 3334, 3461, 3402, 3802, 3904, 4105, 4083, 4184, 4338, 4406, 4265, 4177, 4356, 4698, 4808];
+    const insert_clustered_khepri_unsafe = [796, 2088, 2697, 2909, 3216, 3558, 3429, 3411, 3594, 3777, 4231, 3630, 3811, 3604, 3785, 3839, 4041, 4318, 4105, 4191, 4411];
+    const insert_clustered_mnesia = [1292, 2747, 3460, 3716, 3848, 3917, 4010, 3948, 4101, 4155, 4064, 4135, 4322, 4379, 4421, 4321, 4396, 4187, 4270, 4183, 4244];
 
-    const delete_khepri_safe = [3978, 13460];
-    const delete_khepri_unsafe = [29345, 54195];
-    const delete_mnesia = [38424, 53391];
+    const delete_khepri_safe = [2391, 9481, 13088, 16378, 19244, 22749, 22120, 23450, 24306, 27338, 25007, 29924, 31931, 42621, 38328, 44480, 44747, 48817, 44239, 51444, 44705];
+    const delete_khepri_unsafe = [10240, 29593, 41217, 49351, 46407, 51098, 48157, 53774, 54505, 53798, 55655, 30587, 58746, 62947, 62861, 61550, 34052, 65377, 64374, 65408, 63668];
+    const delete_mnesia = [21535, 36894, 37753, 37316, 37658, 40510, 38674, 41192, 41862, 41526, 42389, 41056, 42633, 41318, 42666, 43564, 42300, 42345, 43052, 43069, 42292];
 
-    const delete_clustered_khepri_safe = [989, 2759];
-    const delete_clustered_khepri_unsafe = [1479, 3077];
-    const delete_clustered_mnesia = [1945, 4278];
+    const delete_clustered_khepri_safe = [558, 1840, 2499, 2970, 3119, 3531, 3906, 3970, 4157, 4424, 4494, 4499, 4623, 4609, 4680, 4899, 5213, 5057, 4961, 5233, 5461];
+    const delete_clustered_khepri_unsafe = [774, 2155, 2735, 3361, 3399, 3653, 3959, 3995, 4118, 4261, 4397, 4317, 4329, 4496, 4634, 4998, 4809, 4957, 4838, 4895, 4952];
+    const delete_clustered_mnesia = [1250, 2740, 3529, 3728, 3824, 3986, 3947, 3954, 4078, 4189, 4044, 4165, 4492, 4334, 4545, 4455, 4523, 4482, 4382, 4519, 4401];
 
     const labels = [];
     for (var i in workers) {
@@ -179,7 +179,7 @@
                 </div>
                 <ul class="text-gray-700 text-base">
                     <li>OS: Linux</li>
-                    <li>CPU: Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz</li>
+                    <li>CPU: Intel(R) Xeon(R) CPU E5-2673 v3 @ 2.40GHz</li>
                     <li>Number of cores: 2</li>
                     <li>Memory: 7 GiB</li>
                     <li>Erlang: 24.2.2</li>
