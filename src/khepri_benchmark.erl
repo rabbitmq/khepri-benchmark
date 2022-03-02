@@ -16,6 +16,7 @@ main(_Args) ->
 run() ->
     io:setopts([{encoding, unicode}]),
     logger:set_primary_config(level, error),
+    SystemInfo = khepri_benchmark_system:info(),
 
     {ok, _} = application:ensure_all_started(khepri_benchmark),
 
@@ -58,14 +59,14 @@ run() ->
                    samples => 3,
                    report => extended},
     ConcurrencyOptions = #{min => 1,
-                           max => 200,
+                           max => 10, % 200 XXX
                            threshold => 500,
                            multiple_of => 10},
 
     Results = run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions),
 
-    khepri_benchmark_output:print_results(Results),
-    khepri_benchmark_output:generate_html(Results),
+    khepri_benchmark_output:print_results(SystemInfo, Results),
+    khepri_benchmark_output:generate_html(SystemInfo, Results),
 
     khepri_benchmark_utils:cleanup_cluster(),
     ok.
