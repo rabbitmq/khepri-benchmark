@@ -3,6 +3,9 @@
 This application is a micro-benchmarking tool to compare Khepri and Mnesia with
 varying concurrency and number of Erlang nodes.
 
+The micro-benchmark only shows the number of operations per second, per type of
+operation. It currently doesn't show the latency of those operations.
+
 ## How to run the benchmark
 
 ```sh
