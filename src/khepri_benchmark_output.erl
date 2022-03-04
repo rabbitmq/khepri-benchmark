@@ -7,10 +7,10 @@
 
 -module(khepri_benchmark_output).
 
--export([print_results/2,
-         generate_html/2]).
+-export([print_results/3,
+         generate_html/3]).
 
-print_results(SystemInfo, Results) ->
+print_results(_Options, SystemInfo, Results) ->
     io:format("~n~n"),
     print_system_info(SystemInfo),
     print_results1(Results).
@@ -100,7 +100,7 @@ backend_color("Khepri (safe)") -> "\033[38;2;204;255;51m";
 backend_color("Khepri (unsafe)") -> "\033[38;2;56;176;0m";
 backend_color(_) -> "".
 
-generate_html(SystemInfo, Results) ->
+generate_html(Options, SystemInfo, Results) ->
     Filename = case khepri_benchmark_utils:runs_from_escript() of
                    true ->
                        %% Escript already uncompressed to setup cluster.
@@ -122,28 +122,29 @@ generate_html(SystemInfo, Results) ->
     InsertKhepriUnafe = collect_scores(Results, "Inserts", "Khepri (unsafe)"),
     InsertMnesia = collect_scores(Results, "Inserts", "Mnesia"),
 
-    %% FIXME: Don't hard-code the "3-node cluster" suffix.
+    ClusterSize = maps:get(cluster_size, Options, 3),
+    Label = khepri_benchmark_utils:cluster_label(ClusterSize),
     InsertClusteredKhepriSafe = collect_scores(
-                                  Results, "Inserts, 3-node cluster",
+                                  Results, "Inserts, " ++ Label,
                                   "Khepri (safe)"),
     InsertClusteredKhepriUnafe = collect_scores(
-                                   Results, "Inserts, 3-node cluster",
+                                   Results, "Inserts, " ++ Label,
                                    "Khepri (unsafe)"),
     InsertClusteredMnesia = collect_scores(
-                              Results, "Inserts, 3-node cluster", "Mnesia"),
+                              Results, "Inserts, " ++ Label, "Mnesia"),
 
     DeleteKhepriSafe = collect_scores(Results, "Deletes", "Khepri (safe)"),
     DeleteKhepriUnafe = collect_scores(Results, "Deletes", "Khepri (unsafe)"),
     DeleteMnesia = collect_scores(Results, "Deletes", "Mnesia"),
 
     DeleteClusteredKhepriSafe = collect_scores(
-                                  Results, "Deletes, 3-node cluster",
+                                  Results, "Deletes, " ++ Label,
                                   "Khepri (safe)"),
     DeleteClusteredKhepriUnafe = collect_scores(
-                                   Results, "Deletes, 3-node cluster",
+                                   Results, "Deletes, " ++ Label,
                                    "Khepri (unsafe)"),
     DeleteClusteredMnesia = collect_scores(
-                              Results, "Deletes, 3-node cluster", "Mnesia"),
+                              Results, "Deletes, " ++ Label, "Mnesia"),
 
     Content1 = replace_list(Template, "workers", Workers),
 
@@ -190,12 +191,13 @@ generate_html(SystemInfo, Results) ->
     Content16 = replace_var(Content15, "%CORES%", NumCores),
     Content17 = replace_var(Content16, "%MEMORY%", AvailableMemory),
     Content18 = replace_var(Content17, "%ERLANG%", Erlang),
+    Content19 = replace_var(Content18, "%CLUSTER_SIZE%", ClusterSize),
 
     TargetDir = "public",
     _ = file:del_dir_r(TargetDir),
     ok = file:make_dir(TargetDir),
     TargetFile = filename:join(TargetDir, "index.html"),
-    ok = file:write_file(TargetFile, Content18),
+    ok = file:write_file(TargetFile, Content19),
     Results.
 
 collect_scores(Results, WantedCategory, WantedBackend) ->
@@ -226,4 +228,4 @@ replace_var(Content, Var, Value) when is_number(Value) ->
     Value1 = integer_to_list(Value),
     replace_var(Content, Var, Value1);
 replace_var(Content, Var, Value) ->
-    re:replace(Content, Var, Value).
+    re:replace(Content, Var, Value, [global]).

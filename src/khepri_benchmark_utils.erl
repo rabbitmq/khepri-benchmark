@@ -14,6 +14,7 @@
          pick_node/1,
          runs_from_escript/0,
          uncompressed_escript_dir/0,
+         cluster_label/1,
          setup_cluster/1,
          cleanup_cluster/0]).
 
@@ -35,6 +36,9 @@ runs_from_escript() ->
 
 uncompressed_escript_dir() ->
     ?UNCOMPRESSED_ESCRIPT_DIR.
+
+cluster_label(ClusterSize) ->
+    lists:flatten(io_lib:format("~b-node cluster", [ClusterSize])).
 
 setup_cluster(ClusterSize) ->
     io:format(

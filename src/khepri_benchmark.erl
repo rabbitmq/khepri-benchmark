@@ -6,14 +6,75 @@
 %%
 
 -module(khepri_benchmark).
+-behaviour(cli).
 
 -export([main/1,
-         run/0]).
+         run/0,
+         cli/0]).
 
-main(_Args) ->
-    run().
+main(Args) ->
+    ScriptName = filename:basename(escript:script_name()),
+    _Out = cli:run(Args, #{progname => ScriptName}),
+    ok.
+
+cli() ->
+    #{handler => fun run/1,
+      arguments =>
+      [
+       #{name => bench_inserts,
+         long => "-bench-inserts",
+         help => "Measure performance of insertions",
+         type => boolean},
+       #{name => bench_deletes,
+         long => "-bench-deletes",
+         help => "Measure performance of deletions",
+         type => boolean},
+
+       #{name => bench_khepri_safe,
+         long => "-bench-khepri-safe",
+         help => "Measure performance of Khepri (using safe/default settings)",
+         type => boolean},
+       #{name => bench_khepri_unsafe,
+         long => "-bench-khepri-unsafe",
+         help => "Measure performance of Khepri (using less safe settings)",
+         type => boolean},
+       #{name => bench_mnesia,
+         long => "-bench-mnesia",
+         help => "Measure performance of Mnesia",
+         type => boolean},
+
+       #{name => bench_single_node,
+         long => "-bench-single-node",
+         help => "Measure performance with a single Erlang node",
+         type => boolean},
+       #{name => bench_cluster,
+         long => "-bench-cluster",
+         help => "Measure performance with an Erlang cluster",
+         type => boolean},
+       #{name => cluster_size,
+         long => "-cluster-size",
+         help => "Set the number of nodes to start for cluster benchmarks",
+         type => {int, [{min, 2}]}},
+
+       #{name => max_workers,
+         long => "-max-workers",
+         help => "Set the maximum number of concurrent workers",
+         type => {int, [{min, 1}]}},
+       #{name => sampling,
+         long => "-sampling",
+         help => "Set the sampling duration in seconds",
+         type => {int, [{min, 1}]}},
+       #{name => multiple_of,
+         long => "-workers-bump-step",
+         help => "Set the number of workers to add after each sampling phase",
+         type => {int, [{min, 1}]}}
+      ]
+     }.
 
 run() ->
+    run(#{}).
+
+run(Options) ->
     io:setopts([{encoding, unicode}]),
     logger:set_primary_config(level, error),
     SystemInfo = khepri_benchmark_system:info(),
@@ -23,53 +84,127 @@ run() ->
     ThisNode = node(),
     SingleNode = [ThisNode],
 
-    ClusterBenchmarks =
-    case ThisNode of
-        nonode@nohost ->
-            [];
-        _ ->
-            ClusterSize = 3,
-            OtherNodes = khepri_benchmark_utils:setup_cluster(ClusterSize),
-            Cluster = [ThisNode | OtherNodes],
+    BenchSingleNode = maps:get(bench_single_node, Options, true),
+    BenchCluster = maps:get(bench_cluster, Options, true),
+    BenchInserts = maps:get(bench_inserts, Options, true),
+    BenchDeletes = maps:get(bench_deletes, Options, true),
 
-            Label = lists:flatten(
-                      io_lib:format("~b-node cluster", [ClusterSize])),
-            [{"Inserts, " ++ Label,
-              [khepri_benchmark_khepri:insert_benchmark(Cluster, safe),
-               khepri_benchmark_khepri:insert_benchmark(Cluster, unsafe),
-               khepri_benchmark_mnesia:insert_benchmark(Cluster)]},
-             {"Deletes, " ++ Label,
-              [khepri_benchmark_khepri:delete_benchmark(Cluster, safe),
-               khepri_benchmark_khepri:delete_benchmark(Cluster, unsafe),
-               khepri_benchmark_mnesia:delete_benchmark(Cluster)]}]
+    SingleNodeBenchmarks =
+    if
+        BenchSingleNode ->
+            BMs3 = [],
+            BMs4 = if
+                       BenchDeletes ->
+                           [{"Deletes",
+                             list_benchmarks(deletes, SingleNode, Options)}
+                            | BMs3];
+                       true ->
+                           BMs3
+                   end,
+            BMs5 = if
+                       BenchInserts ->
+                           [{"Inserts",
+                             list_benchmarks(inserts, SingleNode, Options)}
+                            | BMs4];
+                       true ->
+                           BMs4
+                   end,
+            BMs5;
+        true ->
+            []
     end,
 
-    Benchmarks =
-    [{"Inserts",
-      [khepri_benchmark_khepri:insert_benchmark(SingleNode, safe),
-       khepri_benchmark_khepri:insert_benchmark(SingleNode, unsafe),
-       khepri_benchmark_mnesia:insert_benchmark(SingleNode)]},
-     {"Deletes",
-      [khepri_benchmark_khepri:delete_benchmark(SingleNode, safe),
-       khepri_benchmark_khepri:delete_benchmark(SingleNode, unsafe),
-       khepri_benchmark_mnesia:delete_benchmark(SingleNode)]}
-     | ClusterBenchmarks],
+    ClusterBenchmarks =
+    if
+        BenchCluster andalso ThisNode =/= nonode@nohost ->
+            ClusterSize = maps:get(cluster_size, Options, 3),
+            OtherNodes = khepri_benchmark_utils:setup_cluster(ClusterSize),
+            Cluster = [ThisNode | OtherNodes],
+            Label = khepri_benchmark_utils:cluster_label(ClusterSize),
 
+            BMs0 = [],
+            BMs1 = if
+                      BenchDeletes ->
+                          [{"Deletes, " ++ Label,
+                            list_benchmarks(deletes, Cluster, Options)}
+                           | BMs0];
+                      true ->
+                          BMs0
+                  end,
+            BMs2 = if
+                      BenchInserts ->
+                          [{"Inserts, " ++ Label,
+                            list_benchmarks(inserts, Cluster, Options)}
+                           | BMs1];
+                      true ->
+                          BMs1
+                  end,
+            BMs2;
+        true ->
+            []
+    end,
+
+    Benchmarks = SingleNodeBenchmarks ++ ClusterBenchmarks,
+
+    MaxWorkers = maps:get(max_workers, Options, 200),
+    Sampling = maps:get(sampling, Options, 3),
+    MultipleOf = maps:get(multiple_of, Options, 10),
     RunOptions = #{warmup => 1,
-                   samples => 3,
+                   samples => Sampling,
                    report => extended},
     ConcurrencyOptions = #{min => 1,
-                           max => 200,
-                           threshold => 500,
-                           multiple_of => 10},
+                           max => MaxWorkers,
+                           threshold => MaxWorkers,
+                           multiple_of => MultipleOf},
 
     Results = run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions),
 
-    khepri_benchmark_output:print_results(SystemInfo, Results),
-    khepri_benchmark_output:generate_html(SystemInfo, Results),
+    khepri_benchmark_output:print_results(Options, SystemInfo, Results),
+    khepri_benchmark_output:generate_html(Options, SystemInfo, Results),
 
     khepri_benchmark_utils:cleanup_cluster(),
     ok.
+
+list_benchmarks(What, Nodes, Options) ->
+    BenchKhepriSafe = maps:get(bench_khepri_safe, Options, true),
+    BenchKhepriUnsafe = maps:get(bench_khepri_unsafe, Options, true),
+    BenchMnesia = maps:get(bench_mnesia, Options, true),
+    Benchmarks0 = [],
+    Benchmarks1 = if
+                      BenchKhepriSafe andalso What =:= inserts ->
+                          Benchmarks0 ++
+                          [khepri_benchmark_khepri:insert_benchmark(
+                             Nodes, safe)];
+                      BenchKhepriSafe andalso What =:= deletes ->
+                          Benchmarks0 ++
+                          [khepri_benchmark_khepri:delete_benchmark(
+                             Nodes, safe)];
+                      true ->
+                          Benchmarks0
+                  end,
+    Benchmarks2 = if
+                      BenchKhepriUnsafe andalso What =:= inserts ->
+                          Benchmarks1 ++
+                          [khepri_benchmark_khepri:insert_benchmark(
+                             Nodes, unsafe)];
+                      BenchKhepriUnsafe andalso What =:= deletes ->
+                          Benchmarks1 ++
+                          [khepri_benchmark_khepri:delete_benchmark(
+                             Nodes, unsafe)];
+                      true ->
+                          Benchmarks1
+                  end,
+    Benchmarks3 = if
+                      BenchMnesia andalso What =:= inserts ->
+                          Benchmarks2 ++
+                          [khepri_benchmark_mnesia:insert_benchmark(Nodes)];
+                      BenchMnesia andalso What =:= deletes ->
+                          Benchmarks2 ++
+                          [khepri_benchmark_mnesia:delete_benchmark(Nodes)];
+                      true ->
+                          Benchmarks2
+                  end,
+    Benchmarks3.
 
 run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions) ->
     run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions, []).
