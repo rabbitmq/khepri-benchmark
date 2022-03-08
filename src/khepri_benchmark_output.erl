@@ -145,6 +145,19 @@ generate_html(Options, SystemInfo, Results) ->
     InsertClusteredMnesia = collect_scores(
                               Results, "Inserts, " ++ Label, "Mnesia"),
 
+    QueryKhepriSafe = collect_scores(Results, "Queries", "Khepri (safe)"),
+    QueryKhepriUnsafe = collect_scores(Results, "Queries", "Khepri (unsafe)"),
+    QueryMnesia = collect_scores(Results, "Queries", "Mnesia"),
+
+    QueryClusteredKhepriSafe = collect_scores(
+                                 Results, "Queries, " ++ Label,
+                                 "Khepri (safe)"),
+    QueryClusteredKhepriUnsafe = collect_scores(
+                                   Results, "Queries, " ++ Label,
+                                   "Khepri (unsafe)"),
+    QueryClusteredMnesia = collect_scores(
+                             Results, "Queries, " ++ Label, "Mnesia"),
+
     DeleteKhepriSafe = collect_scores(Results, "Deletes", "Khepri (safe)"),
     DeleteKhepriUnsafe = collect_scores(Results, "Deletes", "Khepri (unsafe)"),
     DeleteMnesia = collect_scores(Results, "Deletes", "Mnesia"),
@@ -168,6 +181,15 @@ generate_html(Options, SystemInfo, Results) ->
     InsertMnesiaMon = collect_monitoring(
                         Results, "Inserts",
                         "Mnesia"),
+    QueryKhepriSafeMon = collect_monitoring(
+                           Results, "Queries",
+                           "Khepri (safe)"),
+    QueryKhepriUnsafeMon = collect_monitoring(
+                             Results, "Queries",
+                             "Khepri (unsafe)"),
+    QueryMnesiaMon = collect_monitoring(
+                       Results, "Queries",
+                       "Mnesia"),
     DeleteKhepriSafeMon = collect_monitoring(
                             Results, "Deletes",
                             "Khepri (safe)"),
@@ -187,6 +209,15 @@ generate_html(Options, SystemInfo, Results) ->
     InsertClusteredMnesiaMon = collect_monitoring(
                                  Results, "Inserts, " ++ Label,
                                  "Mnesia"),
+    QueryClusteredKhepriSafeMon = collect_monitoring(
+                                    Results, "Queries, " ++ Label,
+                                    "Khepri (safe)"),
+    QueryClusteredKhepriUnsafeMon = collect_monitoring(
+                                      Results, "Queries, " ++ Label,
+                                      "Khepri (unsafe)"),
+    QueryClusteredMnesiaMon = collect_monitoring(
+                                Results, "Queries, " ++ Label,
+                                "Mnesia"),
     DeleteClusteredKhepriSafeMon = collect_monitoring(
                                      Results, "Deletes, " ++ Label,
                                      "Khepri (safe)"),
@@ -220,6 +251,21 @@ generate_html(Options, SystemInfo, Results) ->
                    "name" => "Mnesia",
                    "ops_samples" => jsx:encode(InsertMnesia),
                    "monitoring_samples" => jsx:encode(InsertMnesiaMon)}]},
+              #{"category" => "query",
+                "name" => "Queries (unclustered)",
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(QueryKhepriSafe),
+                   "monitoring_samples" => jsx:encode(QueryKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(QueryKhepriUnsafe),
+                   "monitoring_samples" => jsx:encode(QueryKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(QueryMnesia),
+                   "monitoring_samples" => jsx:encode(QueryMnesiaMon)}]},
               #{"category" => "delete",
                 "name" => "Deletes (unclustered)",
                 "backends" =>
@@ -254,6 +300,24 @@ generate_html(Options, SystemInfo, Results) ->
                    "ops_samples" => jsx:encode(InsertClusteredMnesia),
                    "monitoring_samples" =>
                    jsx:encode(InsertClusteredMnesiaMon)}]},
+              #{"category" => "query_clustered",
+                "name" => "Queries, " ++ Label,
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(QueryClusteredKhepriSafe),
+                   "monitoring_samples" =>
+                   jsx:encode(QueryClusteredKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(QueryClusteredKhepriUnsafe),
+                   "monitoring_samples" =>
+                   jsx:encode(QueryClusteredKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(QueryClusteredMnesia),
+                   "monitoring_samples" =>
+                   jsx:encode(QueryClusteredMnesiaMon)}]},
               #{"category" => "delete_clustered",
                 "name" => "Deletes, " ++ Label,
                 "backends" =>

@@ -10,6 +10,7 @@
 -include_lib("stdlib/include/assert.hrl").
 
 -export([insert_benchmark/1,
+         query_benchmark/1,
          delete_benchmark/1]).
 
 -define(TABLE, my_table).
@@ -41,6 +42,31 @@ insert_benchmark(Nodes) ->
                       assert_mnesia_is_not_empty(),
                       stop_mnesia(Nodes)
               end
+     }.
+
+query_benchmark([Node] = Nodes) when Node =:= node() ->
+    #{
+      name => "Mnesia",
+      runner => fun(_) -> query_in_mnesia() end,
+      init => fun() ->
+                      setup_mnesia(Nodes),
+                      fill_mnesia(),
+                      assert_mnesia_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
+              end,
+      done => fun(_) -> stop_mnesia(Nodes) end
+     };
+query_benchmark(Nodes) ->
+    #{
+      name => "Mnesia",
+      runner => fun(_) -> query_in_mnesia(Nodes) end,
+      init => fun() ->
+                      setup_mnesia(Nodes),
+                      fill_mnesia(),
+                      assert_mnesia_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
+              end,
+      done => fun(_) -> stop_mnesia(Nodes) end
      }.
 
 delete_benchmark([Node] = Nodes) when Node =:= node() ->
@@ -117,6 +143,20 @@ insert_in_mnesia(Nodes) ->
     {atomic, ok} = rpc:call(
                      Node, mnesia, transaction,
                      [fun() -> mnesia:write({?TABLE, Key, Value}) end]),
+    ok.
+
+query_in_mnesia() ->
+    Key = khepri_benchmark_utils:get_key(),
+    {atomic, _} = mnesia:transaction(
+                    fun() -> mnesia:read({?TABLE, Key}) end),
+    ok.
+
+query_in_mnesia(Nodes) ->
+    Key = khepri_benchmark_utils:get_key(),
+    Node = khepri_benchmark_utils:pick_node(Nodes),
+    {atomic, _} = rpc:call(
+                    Node, mnesia, transaction,
+                    [fun() -> mnesia:read({?TABLE, Key}) end]),
     ok.
 
 delete_in_mnesia() ->

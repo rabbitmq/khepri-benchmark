@@ -11,6 +11,7 @@
 -include_lib("khepri/include/khepri.hrl").
 
 -export([insert_benchmark/2,
+         query_benchmark/2,
          delete_benchmark/2]).
 
 -define(RA_SYSTEM, default).
@@ -45,6 +46,31 @@ insert_benchmark(Nodes, Profile) ->
                       assert_khepri_is_not_empty(),
                       stop_khepri(Nodes)
               end
+     }.
+
+query_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
+    #{
+      name => name(Profile),
+      runner => fun(_) -> query_in_khepri() end,
+      init => fun() ->
+                      setup_khepri(Nodes, Profile),
+                      fill_khepri(),
+                      assert_khepri_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
+              end,
+      done => fun(_) -> stop_khepri(Nodes) end
+     };
+query_benchmark(Nodes, Profile) ->
+    #{
+      name => name(Profile),
+      runner => fun(_) -> query_in_khepri(Nodes) end,
+      init => fun() ->
+                      setup_khepri(Nodes, Profile),
+                      fill_khepri(),
+                      assert_khepri_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
+              end,
+      done => fun(_) -> stop_khepri(Nodes) end
      }.
 
 delete_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
@@ -155,6 +181,18 @@ insert_in_khepri(Nodes) ->
     {ok, _} = rpc:call(
                 Node, khepri_machine, put,
                 [?RA_CLUSTER, [?TABLE, Key], #kpayload_data{data = Value}]),
+    ok.
+
+query_in_khepri() ->
+    Key = khepri_benchmark_utils:get_key(),
+    {ok, _} = khepri_machine:get(?RA_CLUSTER, [?TABLE, Key]),
+    ok.
+
+query_in_khepri(Nodes) ->
+    Key = khepri_benchmark_utils:get_key(),
+    Node = khepri_benchmark_utils:pick_node(Nodes),
+    {ok, _} = rpc:call(
+                Node, khepri_machine, get, [?RA_CLUSTER, [?TABLE, Key]]),
     ok.
 
 delete_in_khepri() ->

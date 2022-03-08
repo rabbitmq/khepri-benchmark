@@ -25,6 +25,10 @@ cli() ->
          long => "-bench-inserts",
          help => "Measure performance of insertions",
          type => boolean},
+       #{name => bench_queries,
+         long => "-bench-queries",
+         help => "Measure performance of queries",
+         type => boolean},
        #{name => bench_deletes,
          long => "-bench-deletes",
          help => "Measure performance of deletions",
@@ -87,31 +91,41 @@ run(Options) ->
     BenchSingleNode = maps:get(bench_single_node, Options, true),
     BenchCluster = maps:get(bench_cluster, Options, true),
     BenchInserts = maps:get(bench_inserts, Options, true),
+    BenchQueries = maps:get(bench_queries, Options, true),
     BenchDeletes = maps:get(bench_deletes, Options, true),
 
     SingleNodeBenchmarks =
     if
         BenchSingleNode ->
-            BMs3 = [],
-            BMs4 = if
+            BMs4 = [],
+            BMs5 = if
                        BenchDeletes ->
                            [{"Deletes",
                              SingleNode,
                              list_benchmarks(deletes, SingleNode, Options)}
-                            | BMs3];
-                       true ->
-                           BMs3
-                   end,
-            BMs5 = if
-                       BenchInserts ->
-                           [{"Inserts",
-                             SingleNode,
-                             list_benchmarks(inserts, SingleNode, Options)}
                             | BMs4];
                        true ->
                            BMs4
                    end,
-            BMs5;
+            BMs6 = if
+                       BenchQueries ->
+                           [{"Queries",
+                             SingleNode,
+                             list_benchmarks(queries, SingleNode, Options)}
+                            | BMs5];
+                       true ->
+                           BMs5
+                   end,
+            BMs7 = if
+                       BenchInserts ->
+                           [{"Inserts",
+                             SingleNode,
+                             list_benchmarks(inserts, SingleNode, Options)}
+                            | BMs6];
+                       true ->
+                           BMs6
+                   end,
+            BMs7;
         true ->
             []
     end,
@@ -135,15 +149,24 @@ run(Options) ->
                           BMs0
                   end,
             BMs2 = if
-                      BenchInserts ->
-                          [{"Inserts, " ++ Label,
+                      BenchQueries ->
+                          [{"Queries, " ++ Label,
                             Cluster,
-                            list_benchmarks(inserts, Cluster, Options)}
+                            list_benchmarks(queries, Cluster, Options)}
                            | BMs1];
                       true ->
                           BMs1
                   end,
-            BMs2;
+            BMs3 = if
+                      BenchInserts ->
+                          [{"Inserts, " ++ Label,
+                            Cluster,
+                            list_benchmarks(inserts, Cluster, Options)}
+                           | BMs2];
+                      true ->
+                          BMs2
+                  end,
+            BMs3;
         true ->
             []
     end,
@@ -179,6 +202,10 @@ list_benchmarks(What, Nodes, Options) ->
                           Benchmarks0 ++
                           [khepri_benchmark_khepri:insert_benchmark(
                              Nodes, safe)];
+                      BenchKhepriSafe andalso What =:= queries ->
+                          Benchmarks0 ++
+                          [khepri_benchmark_khepri:query_benchmark(
+                             Nodes, safe)];
                       BenchKhepriSafe andalso What =:= deletes ->
                           Benchmarks0 ++
                           [khepri_benchmark_khepri:delete_benchmark(
@@ -191,6 +218,10 @@ list_benchmarks(What, Nodes, Options) ->
                           Benchmarks1 ++
                           [khepri_benchmark_khepri:insert_benchmark(
                              Nodes, unsafe)];
+                      BenchKhepriUnsafe andalso What =:= queries ->
+                          Benchmarks1 ++
+                          [khepri_benchmark_khepri:query_benchmark(
+                             Nodes, unsafe)];
                       BenchKhepriUnsafe andalso What =:= deletes ->
                           Benchmarks1 ++
                           [khepri_benchmark_khepri:delete_benchmark(
@@ -202,6 +233,9 @@ list_benchmarks(What, Nodes, Options) ->
                       BenchMnesia andalso What =:= inserts ->
                           Benchmarks2 ++
                           [khepri_benchmark_mnesia:insert_benchmark(Nodes)];
+                      BenchMnesia andalso What =:= queries ->
+                          Benchmarks2 ++
+                          [khepri_benchmark_mnesia:query_benchmark(Nodes)];
                       BenchMnesia andalso What =:= deletes ->
                           Benchmarks2 ++
                           [khepri_benchmark_mnesia:delete_benchmark(Nodes)];
