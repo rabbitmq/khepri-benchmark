@@ -12,8 +12,10 @@
 -export([max_keys/0,
          get_key/0,
          pick_node/1,
+         bench_runner_init_done/0,
          runs_from_escript/0,
          uncompressed_escript_dir/0,
+         uncompress_escript/0,
          cluster_label/1,
          setup_cluster/1,
          cleanup_cluster/0]).
@@ -31,11 +33,24 @@ pick_node(Cluster) ->
     I = rand:uniform(length(Cluster)),
     lists:nth(I, Cluster).
 
+bench_runner_init_done() ->
+    kb_resource_monitor ! go.
+
 runs_from_escript() ->
     not filelib:is_dir(code:lib_dir(khepri)).
 
 uncompressed_escript_dir() ->
     ?UNCOMPRESSED_ESCRIPT_DIR.
+
+uncompress_escript() ->
+    TargetDir = uncompressed_escript_dir(),
+    _ = file:del_dir_r(TargetDir),
+    ok = file:make_dir(TargetDir),
+    Escript = escript:script_name(),
+    {ok, Sections} = escript:extract(Escript, []),
+    Archive = proplists:get_value(archive, Sections),
+    {ok, Files} = zip:unzip(Archive, [{cwd, TargetDir}]),
+    Files.
 
 cluster_label(ClusterSize) ->
     lists:flatten(io_lib:format("~b-node cluster", [ClusterSize])).
@@ -46,13 +61,7 @@ setup_cluster(ClusterSize) ->
       [ClusterSize]),
     CodePath = case runs_from_escript() of
                    true ->
-                       TargetDir = uncompressed_escript_dir(),
-                       _ = file:del_dir_r(TargetDir),
-                       ok = file:make_dir(TargetDir),
-                       Escript = escript:script_name(),
-                       {ok, Sections} = escript:extract(Escript, []),
-                       Archive = proplists:get_value(archive, Sections),
-                       {ok, Files} = zip:unzip(Archive, [{cwd, TargetDir}]),
+                       Files = uncompress_escript(),
                        [filename:dirname(File)
                         || File <- Files,
                            filename:extension(File) =:= ".app"];

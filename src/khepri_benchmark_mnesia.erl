@@ -20,7 +20,8 @@ insert_benchmark([Node] = Nodes) when Node =:= node() ->
       runner => fun(_) -> insert_in_mnesia() end,
       init => fun() ->
                       setup_mnesia(Nodes),
-                      assert_mnesia_is_empty()
+                      assert_mnesia_is_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) ->
                       assert_mnesia_is_not_empty(),
@@ -33,7 +34,8 @@ insert_benchmark(Nodes) ->
       runner => fun(_) -> insert_in_mnesia(Nodes) end,
       init => fun() ->
                       setup_mnesia(Nodes),
-                      assert_mnesia_is_empty()
+                      assert_mnesia_is_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) ->
                       assert_mnesia_is_not_empty(),
@@ -48,7 +50,8 @@ delete_benchmark([Node] = Nodes) when Node =:= node() ->
       init => fun() ->
                       setup_mnesia(Nodes),
                       fill_mnesia(),
-                      assert_mnesia_is_not_empty()
+                      assert_mnesia_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) -> stop_mnesia(Nodes) end
      };
@@ -59,7 +62,8 @@ delete_benchmark(Nodes) ->
       init => fun() ->
                       setup_mnesia(Nodes),
                       fill_mnesia(),
-                      assert_mnesia_is_not_empty()
+                      assert_mnesia_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) -> stop_mnesia(Nodes) end
      }.

@@ -96,6 +96,7 @@ run(Options) ->
             BMs4 = if
                        BenchDeletes ->
                            [{"Deletes",
+                             SingleNode,
                              list_benchmarks(deletes, SingleNode, Options)}
                             | BMs3];
                        true ->
@@ -104,6 +105,7 @@ run(Options) ->
             BMs5 = if
                        BenchInserts ->
                            [{"Inserts",
+                             SingleNode,
                              list_benchmarks(inserts, SingleNode, Options)}
                             | BMs4];
                        true ->
@@ -126,6 +128,7 @@ run(Options) ->
             BMs1 = if
                       BenchDeletes ->
                           [{"Deletes, " ++ Label,
+                            Cluster,
                             list_benchmarks(deletes, Cluster, Options)}
                            | BMs0];
                       true ->
@@ -134,6 +137,7 @@ run(Options) ->
             BMs2 = if
                       BenchInserts ->
                           [{"Inserts, " ++ Label,
+                            Cluster,
                             list_benchmarks(inserts, Cluster, Options)}
                            | BMs1];
                       true ->
@@ -210,9 +214,11 @@ run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions) ->
     run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions, []).
 
 run_benchmarks(
-  [{Name, Benchmarks} | Rest], RunOptions, ConcurrencyOptions, Results) ->
+  [{Name, Nodes, Benchmarks} | Rest],
+  RunOptions, ConcurrencyOptions, Results) ->
     io:format("~nBenchmarking ~ts:", [Name]),
-    Result = run_benchmarks1(Benchmarks, RunOptions, ConcurrencyOptions, []),
+    Result = run_benchmarks1(
+               Benchmarks, Nodes, RunOptions, ConcurrencyOptions, []),
     Results1 = [{Name, Result} | Results],
     run_benchmarks(Rest, RunOptions, ConcurrencyOptions, Results1);
 run_benchmarks([], _RunOptions, _ConcurrencyOptions, Results) ->
@@ -220,10 +226,54 @@ run_benchmarks([], _RunOptions, _ConcurrencyOptions, Results) ->
 
 run_benchmarks1(
   [#{name := Name} = Benchmark | Rest],
-  RunOptions, ConcurrencyOptions, Results) ->
+  Nodes, RunOptions, ConcurrencyOptions, Results) ->
     io:format(" ~ts...", [Name]),
-    {_Max, Result} = erlperf:run(Benchmark, RunOptions, ConcurrencyOptions),
-    Results1 = [{Name, lists:reverse(Result)} | Results],
-    run_benchmarks1(Rest, RunOptions, ConcurrencyOptions, Results1);
-run_benchmarks1([], _RunOptions, _ConcurrencyOptions, Results) ->
+    Parent = self(),
+    Monitor = spawn_link(
+                fun() ->
+                        true = register(kb_resource_monitor, self()),
+                        receive go -> ok end,
+
+                        Monitoring = monitor_resources(Nodes),
+                        unlink(Parent),
+                        Parent ! {monitor, Monitoring}
+                end),
+    _Runner = spawn_link(
+                fun() ->
+                        Result = do_run_benchmark(
+                                   Benchmark, RunOptions, ConcurrencyOptions),
+                        unlink(Parent),
+                        Parent ! {result, Result}
+                end),
+    {Result, Monitoring} = receive
+                               {result, R} ->
+                                   Monitor ! stop,
+                                   receive
+                                       {monitor, M} -> {R, M}
+                                   end
+                           end,
+    Results1 = [{Name, Result, Monitoring} | Results],
+    run_benchmarks1(Rest, Nodes, RunOptions, ConcurrencyOptions, Results1);
+run_benchmarks1([], _Nodes, _RunOptions, _ConcurrencyOptions, Results) ->
     lists:reverse(Results).
+
+do_run_benchmark(Benchmark, RunOptions, ConcurrencyOptions) ->
+    {_Max, Result} = erlperf:run(Benchmark, RunOptions, ConcurrencyOptions),
+    lists:reverse(Result).
+
+monitor_resources(Nodes) ->
+    Samples = [],
+    monitor_resources(Nodes, 0, Samples).
+
+monitor_resources(Nodes, T, Samples) ->
+    Sample = [#{node => Node,
+                memory => rpc:call(Node, erlang, memory, []),
+                gc => rpc:call(Node, erlang, statistics, [garbage_collection])}
+              || Node <- Nodes],
+    Samples1 = [{T, Sample} | Samples],
+    receive
+        stop ->
+            lists:reverse(Samples1)
+    after 1000 ->
+              monitor_resources(Nodes, T + 1, Samples1)
+    end.

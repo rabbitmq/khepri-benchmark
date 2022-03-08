@@ -41,7 +41,7 @@ print_results1([{Category, CategoryResults} | Rest] = Results) ->
                          [{average(Scores), Concurrency}
                           || {Scores, Concurrency} <- BackendResults,
                              lists:member(Concurrency, WantedConcurrency)]}
-                        || {Backend, BackendResults} <- CategoryResults],
+                        || {Backend, BackendResults, _} <- CategoryResults],
 
     {MaxLabelLen, MaxValue} =
     lists:foldl(
@@ -85,7 +85,8 @@ print_category(
     print_diagram(CategoryResults, Concurrency, MaxLabelLen, MaxValue).
 
 print_diagram(
-  [{Backend, BackendResults} | Rest], Concurrency, MaxLabelLen, MaxValue) ->
+  [{Backend, BackendResults} | Rest],
+  Concurrency, MaxLabelLen, MaxValue) ->
     {AvgScore, Concurrency} = lists:keyfind(Concurrency, 2, BackendResults),
     io:format(
       "    ~*.. ts: ~s~*..■s\033[0m ~b ops/s~n",
@@ -103,82 +104,21 @@ backend_color(_) -> "".
 generate_html(Options, SystemInfo, Results) ->
     Filename = case khepri_benchmark_utils:runs_from_escript() of
                    true ->
-                       %% Escript already uncompressed to setup cluster.
+                       Dir = khepri_benchmark_utils:uncompressed_escript_dir(),
+                       BenchCluster = maps:get(bench_cluster, Options, true),
+                       case BenchCluster of
+                           true ->
+                               ok;
+                           false ->
+                               _ = khepri_benchmark_utils:uncompress_escript()
+                       end,
                        filename:join(
-                         [khepri_benchmark_utils:
-                          uncompressed_escript_dir(),
-                          "priv",
-                          "index.html"]);
+                         [Dir, "priv", "index.html"]);
                    false ->
                        filename:join(
-                         [code:priv_dir(khepri_benchmark),
-                          "index.html"])
+                         [code:priv_dir(khepri_benchmark), "index.html"])
                end,
     {ok, Template} = file:read_file(Filename),
-
-    Workers = tested_workers(Results),
-
-    InsertKhepriSafe = collect_scores(Results, "Inserts", "Khepri (safe)"),
-    InsertKhepriUnafe = collect_scores(Results, "Inserts", "Khepri (unsafe)"),
-    InsertMnesia = collect_scores(Results, "Inserts", "Mnesia"),
-
-    ClusterSize = maps:get(cluster_size, Options, 3),
-    Label = khepri_benchmark_utils:cluster_label(ClusterSize),
-    InsertClusteredKhepriSafe = collect_scores(
-                                  Results, "Inserts, " ++ Label,
-                                  "Khepri (safe)"),
-    InsertClusteredKhepriUnafe = collect_scores(
-                                   Results, "Inserts, " ++ Label,
-                                   "Khepri (unsafe)"),
-    InsertClusteredMnesia = collect_scores(
-                              Results, "Inserts, " ++ Label, "Mnesia"),
-
-    DeleteKhepriSafe = collect_scores(Results, "Deletes", "Khepri (safe)"),
-    DeleteKhepriUnafe = collect_scores(Results, "Deletes", "Khepri (unsafe)"),
-    DeleteMnesia = collect_scores(Results, "Deletes", "Mnesia"),
-
-    DeleteClusteredKhepriSafe = collect_scores(
-                                  Results, "Deletes, " ++ Label,
-                                  "Khepri (safe)"),
-    DeleteClusteredKhepriUnafe = collect_scores(
-                                   Results, "Deletes, " ++ Label,
-                                   "Khepri (unsafe)"),
-    DeleteClusteredMnesia = collect_scores(
-                              Results, "Deletes, " ++ Label, "Mnesia"),
-
-    Content1 = replace_list(Template, "workers", Workers),
-
-    Content2 = replace_list(
-                 Content1, "insert_khepri_safe", InsertKhepriSafe),
-    Content3 = replace_list(
-                 Content2, "insert_khepri_unsafe", InsertKhepriUnafe),
-    Content4 = replace_list(
-                 Content3, "insert_mnesia", InsertMnesia),
-
-    Content5 = replace_list(
-                 Content4, "insert_clustered_khepri_safe",
-                 InsertClusteredKhepriSafe),
-    Content6 = replace_list(
-                 Content5, "insert_clustered_khepri_unsafe",
-                 InsertClusteredKhepriUnafe),
-    Content7 = replace_list(
-                 Content6, "insert_clustered_mnesia", InsertClusteredMnesia),
-
-    Content8 = replace_list(
-                 Content7, "delete_khepri_safe", DeleteKhepriSafe),
-    Content9 = replace_list(
-                 Content8, "delete_khepri_unsafe", DeleteKhepriUnafe),
-    Content10 = replace_list(
-                  Content9, "delete_mnesia", DeleteMnesia),
-
-    Content11 = replace_list(
-                  Content10, "delete_clustered_khepri_safe",
-                  DeleteClusteredKhepriSafe),
-    Content12 = replace_list(
-                  Content11, "delete_clustered_khepri_unsafe",
-                  DeleteClusteredKhepriUnafe),
-    Content13 = replace_list(
-                  Content12, "delete_clustered_mnesia", DeleteClusteredMnesia),
 
     #{cpu_speed := CpuSpeed,
       num_cores := NumCores,
@@ -186,46 +126,190 @@ generate_html(Options, SystemInfo, Results) ->
       os := OS,
       erlang := Erlang} = SystemInfo,
 
-    Content14 = replace_var(Content13, "%OS%", OS),
-    Content15 = replace_var(Content14, "%CPU%", CpuSpeed),
-    Content16 = replace_var(Content15, "%CORES%", NumCores),
-    Content17 = replace_var(Content16, "%MEMORY%", AvailableMemory),
-    Content18 = replace_var(Content17, "%ERLANG%", Erlang),
-    Content19 = replace_var(Content18, "%CLUSTER_SIZE%", ClusterSize),
+    ClusterSize = maps:get(cluster_size, Options, 3),
+    Label = khepri_benchmark_utils:cluster_label(ClusterSize),
+
+    Workers = tested_workers(Results),
+
+    %% Operations per second.
+    InsertKhepriSafe = collect_scores(Results, "Inserts", "Khepri (safe)"),
+    InsertKhepriUnsafe = collect_scores(Results, "Inserts", "Khepri (unsafe)"),
+    InsertMnesia = collect_scores(Results, "Inserts", "Mnesia"),
+
+    InsertClusteredKhepriSafe = collect_scores(
+                                  Results, "Inserts, " ++ Label,
+                                  "Khepri (safe)"),
+    InsertClusteredKhepriUnsafe = collect_scores(
+                                   Results, "Inserts, " ++ Label,
+                                   "Khepri (unsafe)"),
+    InsertClusteredMnesia = collect_scores(
+                              Results, "Inserts, " ++ Label, "Mnesia"),
+
+    DeleteKhepriSafe = collect_scores(Results, "Deletes", "Khepri (safe)"),
+    DeleteKhepriUnsafe = collect_scores(Results, "Deletes", "Khepri (unsafe)"),
+    DeleteMnesia = collect_scores(Results, "Deletes", "Mnesia"),
+
+    DeleteClusteredKhepriSafe = collect_scores(
+                                  Results, "Deletes, " ++ Label,
+                                  "Khepri (safe)"),
+    DeleteClusteredKhepriUnsafe = collect_scores(
+                                   Results, "Deletes, " ++ Label,
+                                   "Khepri (unsafe)"),
+    DeleteClusteredMnesia = collect_scores(
+                              Results, "Deletes, " ++ Label, "Mnesia"),
+
+    %% Monitoring.
+    InsertKhepriSafeMon = collect_monitoring(
+                            Results, "Inserts",
+                            "Khepri (safe)"),
+    InsertKhepriUnsafeMon = collect_monitoring(
+                              Results, "Inserts",
+                              "Khepri (unsafe)"),
+    InsertMnesiaMon = collect_monitoring(
+                        Results, "Inserts",
+                        "Mnesia"),
+    DeleteKhepriSafeMon = collect_monitoring(
+                            Results, "Deletes",
+                            "Khepri (safe)"),
+    DeleteKhepriUnsafeMon = collect_monitoring(
+                              Results, "Deletes",
+                              "Khepri (unsafe)"),
+    DeleteMnesiaMon = collect_monitoring(
+                        Results, "Deletes",
+                        "Mnesia"),
+
+    InsertClusteredKhepriSafeMon = collect_monitoring(
+                                     Results, "Inserts, " ++ Label,
+                                     "Khepri (safe)"),
+    InsertClusteredKhepriUnsafeMon = collect_monitoring(
+                                       Results, "Inserts, " ++ Label,
+                                       "Khepri (unsafe)"),
+    InsertClusteredMnesiaMon = collect_monitoring(
+                                 Results, "Inserts, " ++ Label,
+                                 "Mnesia"),
+    DeleteClusteredKhepriSafeMon = collect_monitoring(
+                                     Results, "Deletes, " ++ Label,
+                                     "Khepri (safe)"),
+    DeleteClusteredKhepriUnsafeMon = collect_monitoring(
+                                       Results, "Deletes, " ++ Label,
+                                       "Khepri (unsafe)"),
+    DeleteClusteredMnesiaMon = collect_monitoring(
+                                 Results, "Deletes, " ++ Label,
+                                 "Mnesia"),
+
+    Vars = #{"os" => OS,
+             "cpu_speed" => CpuSpeed,
+             "num_cores" => NumCores,
+             "available_memory" => AvailableMemory,
+             "erlang" => Erlang,
+             "cluster_size" => ClusterSize,
+             "workers" => jsx:encode(Workers),
+             "categories" =>
+             [#{"category" => "insert",
+                "name" => "Inserts (unclustered)",
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(InsertKhepriSafe),
+                   "monitoring_samples" => jsx:encode(InsertKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(InsertKhepriUnsafe),
+                   "monitoring_samples" => jsx:encode(InsertKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(InsertMnesia),
+                   "monitoring_samples" => jsx:encode(InsertMnesiaMon)}]},
+              #{"category" => "delete",
+                "name" => "Deletes (unclustered)",
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(DeleteKhepriSafe),
+                   "monitoring_samples" => jsx:encode(DeleteKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(DeleteKhepriUnsafe),
+                   "monitoring_samples" => jsx:encode(DeleteKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(DeleteMnesia),
+                   "monitoring_samples" => jsx:encode(DeleteMnesiaMon)}]},
+
+              #{"category" => "insert_clustered",
+                "name" => "Inserts, " ++ Label,
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(InsertClusteredKhepriSafe),
+                   "monitoring_samples" =>
+                   jsx:encode(InsertClusteredKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(InsertClusteredKhepriUnsafe),
+                   "monitoring_samples" =>
+                   jsx:encode(InsertClusteredKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(InsertClusteredMnesia),
+                   "monitoring_samples" =>
+                   jsx:encode(InsertClusteredMnesiaMon)}]},
+              #{"category" => "delete_clustered",
+                "name" => "Deletes, " ++ Label,
+                "backends" =>
+                [#{"backend" => "khepri_safe",
+                   "name" => "Khepri (safe)",
+                   "ops_samples" => jsx:encode(DeleteClusteredKhepriSafe),
+                   "monitoring_samples" =>
+                   jsx:encode(DeleteClusteredKhepriSafeMon)},
+                 #{"backend" => "khepri_unsafe",
+                   "name" => "Khepri (unsafe)",
+                   "ops_samples" => jsx:encode(DeleteClusteredKhepriUnsafe),
+                   "monitoring_samples" =>
+                   jsx:encode(DeleteClusteredKhepriUnsafeMon)},
+                 #{"backend" => "mnesia",
+                   "name" => "Mnesia",
+                   "ops_samples" => jsx:encode(DeleteClusteredMnesia),
+                   "monitoring_samples" =>
+                   jsx:encode(DeleteClusteredMnesiaMon)}]}
+             ]},
+    Content = bbmustache:render(Template, Vars),
 
     TargetDir = "public",
     _ = file:del_dir_r(TargetDir),
     ok = file:make_dir(TargetDir),
     TargetFile = filename:join(TargetDir, "index.html"),
-    ok = file:write_file(TargetFile, Content19),
+    ok = file:write_file(TargetFile, Content),
     Results.
 
 collect_scores(Results, WantedCategory, WantedBackend) ->
     [average(Scores)
      || {Category, CategoryResults} <- Results,
         Category =:= WantedCategory,
-        {Backend, BackendResults} <- CategoryResults,
+        {Backend, BackendResults, _Monitoring} <- CategoryResults,
         Backend =:= WantedBackend,
         {Scores, _Concurrency} <- BackendResults].
-
-replace_list(Content, Var, List) ->
-    List1 = string:join([integer_to_list(I) || I <- List], ", "),
-    re:replace(
-      Content,
-      Var ++ " = \\[\\]",
-      Var ++ " = [" ++ List1 ++ "]").
 
 tested_workers(Results) ->
     [Concurrency
      || {_Category, CategoryResults} <- [hd(Results)],
-        {_Backend, BackendResults} <- [hd(CategoryResults)],
+        {_Backend, BackendResults, _Monitoring} <- [hd(CategoryResults)],
         {_Scores, Concurrency} <- BackendResults].
 
 average(Scores) ->
     lists:sum(Scores) div length(Scores).
 
-replace_var(Content, Var, Value) when is_number(Value) ->
-    Value1 = integer_to_list(Value),
-    replace_var(Content, Var, Value1);
-replace_var(Content, Var, Value) ->
-    re:replace(Content, Var, Value, [global]).
+collect_monitoring(Results, WantedCategory, WantedBackend) ->
+    [#{timestamp => Timestamp,
+       data =>
+       [#{node => Node,
+          gc => NumberOfGCs,
+          total_mem => proplists:get_value(total, Memory)}
+        || #{node := Node,
+             gc := {NumberOfGCs, _, _},
+             memory := Memory} <- Sample]}
+     || {Category, CategoryResults} <- Results,
+        Category =:= WantedCategory,
+        {Backend, _BackendResults, Monitoring} <- CategoryResults,
+        Backend =:= WantedBackend,
+        {Timestamp, Sample} <- Monitoring].

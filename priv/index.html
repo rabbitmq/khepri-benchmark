@@ -14,104 +14,14 @@
           crossorigin="anonymous"
           referrerpolicy="no-referrer"></script>
   <script>
-    const workers = [];
-
-    const insert_khepri_safe = [];
-    const insert_khepri_unsafe = [];
-    const insert_mnesia = [];
-
-    const insert_clustered_khepri_safe = [];
-    const insert_clustered_khepri_unsafe = [];
-    const insert_clustered_mnesia = [];
-
-    const delete_khepri_safe = [];
-    const delete_khepri_unsafe = [];
-    const delete_mnesia = [];
-
-    const delete_clustered_khepri_safe = [];
-    const delete_clustered_khepri_unsafe = [];
-    const delete_clustered_mnesia = [];
-
-    const labels = [];
-    for (var i in workers) {
-      const worker = workers[i];
-      labels.push(worker.toString());
-    }
-
-    const datasets = [
-      {
-        label: 'Khepri (safe)',
-        borderColor: 'rgb(75, 192, 192)', // green
-        fill: false,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.4
-      }, {
-        label: 'Khepri (unsafe)',
-        borderColor: 'rgb(54, 162, 235)', // blue
-        fill: false,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.4
-      }, {
-        label: 'Mnesia',
-        borderColor: 'rgb(255, 99, 132)', // red
-        fill: false,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.4
-      }
-    ];
-
-    var insert_datasets = JSON.parse(JSON.stringify(datasets));
-    insert_datasets[0].data = insert_khepri_safe;
-    insert_datasets[1].data = insert_khepri_unsafe;
-    insert_datasets[2].data = insert_mnesia;
-
-    const insert_data = {
-      labels: labels,
-      datasets: insert_datasets
-    };
-
-    var insert_clustered_datasets = JSON.parse(JSON.stringify(datasets));
-    insert_clustered_datasets[0].data = insert_clustered_khepri_safe;
-    insert_clustered_datasets[1].data = insert_clustered_khepri_unsafe;
-    insert_clustered_datasets[2].data = insert_clustered_mnesia;
-
-    const insert_clustered_data = {
-      labels: labels,
-      datasets: insert_clustered_datasets
-    };
-
-    var delete_datasets = JSON.parse(JSON.stringify(datasets));
-    delete_datasets[0].data = delete_khepri_safe;
-    delete_datasets[1].data = delete_khepri_unsafe;
-    delete_datasets[2].data = delete_mnesia;
-
-    const delete_data = {
-      labels: labels,
-      datasets: delete_datasets
-    };
-
-    var delete_clustered_datasets = JSON.parse(JSON.stringify(datasets));
-    delete_clustered_datasets[0].data = delete_clustered_khepri_safe;
-    delete_clustered_datasets[1].data = delete_clustered_khepri_unsafe;
-    delete_clustered_datasets[2].data = delete_clustered_mnesia;
-
-    const delete_clustered_data = {
-      labels: labels,
-      datasets: delete_clustered_datasets
-    };
-
-    const config = {
+    const ops_config = {
       type: 'line',
       options: {
         responsive: true,
         plugins: {
           title: {
-            display: false,
-          },
-          legend: {
-            labels: {
-              //color: 'rgb(209, 213, 219)',
-            },
+            display: true,
+            text: 'Operations per second with increasing concurrent workers',
           },
         },
         interaction: {
@@ -123,41 +33,186 @@
             title: {
               display: true,
               text: 'Concurrent workers',
-              //color: 'rgb(209, 213, 219)',
             }
           },
           y: {
             display: true,
             title: {
               display: true,
-              text: 'Operation per second',
-              //color: 'rgb(209, 213, 219)',
+              text: 'Operations per second',
             },
-            suggestedMin: 0,
+            min: 0,
           }
         }
       },
     };
 
-    const insert_config = {
-      ...config,
-      ...{ data: insert_data }
+    const gc_config = {
+      type: 'line',
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Garbage collections over time',
+          },
+        },
+        interaction: {
+          intersect: false,
+        },
+        parsing: { yAxisKey: 'gc' },
+        scales: {
+          x: {
+            type: 'linear',
+            display: false,
+            title: {
+              display: true,
+              text: 'Time',
+            },
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Number of garbage collections',
+            },
+            min: 0,
+          }
+        }
+      },
     };
 
-    const insert_clustered_config = {
-      ...config,
-      ...{ data: insert_clustered_data }
+    const total_mem_config = {
+      type: 'line',
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Erlang memory footprint over time',
+          },
+        },
+        interaction: {
+          intersect: false,
+        },
+        parsing: { yAxisKey: 'total_mem' },
+        scales: {
+          x: {
+            type: 'linear',
+            display: false,
+            title: {
+              display: true,
+              text: 'Time',
+            },
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Erlang memory footprint (MiB)',
+            },
+            min: 0,
+          }
+        }
+      },
     };
 
-    const delete_config = {
-      ...config,
-      ...{ data: delete_data }
+    const line_colors = {
+      //khepri_safe: 'rgb(75, 192, 192)',   // Green.
+      //khepri_unsafe: 'rgb(54, 162, 235)', // Blue.
+      //mnesia: 'rgb(255, 99, 132)',        // Red.
+      khepri_safe: 'rgb(167, 201, 87)',   // Green.
+      khepri_unsafe: 'rgb(39, 125, 161)', // Blue.
+      mnesia: 'rgb(249, 65, 68)',        // Red.
     };
 
-    const delete_clustered_config = {
-      ...config,
-      ...{ data: delete_clustered_data }
+    const workers = {{{workers}}};
+    const ops_labels = [];
+    for (var i in workers) {
+      const worker = workers[i];
+      ops_labels.push(worker.toString());
+    }
+    {{#categories}}
+
+    var {{category}}_ops_data = { labels: ops_labels, datasets: [] };
+    var {{category}}_monitoring_data = { datasets: [] };
+    var {{category}}_monitoring_max_x = 0;
+    {{#backends}}
+
+    var {{backend}}_ops_dataset = { datasets: [] };
+    var {{backend}}_monitoring_dataset = { datasets: [] };
+    {
+      const {{backend}}_dataset_base = {
+        label: '{{{name}}}',
+        borderColor: line_colors['{{backend}}'],
+        fill: false,
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,
+      };
+
+      /* Operations per second. */
+      const {{backend}}_ops_samples = {{{ops_samples}}};
+
+      {{backend}}_ops_dataset = {
+        ...{{backend}}_dataset_base,
+        ...{ data: {{backend}}_ops_samples }
+      };
+
+      /* Monitoring. */
+      const {{backend}}_monitoring_samples = {{{monitoring_samples}}};
+
+      {{backend}}_monitoring_dataset = {
+        ...{{backend}}_dataset_base,
+        ...{ data: [] }
+      };
+
+      for (var i in {{backend}}_monitoring_samples) {
+        const sample = {{backend}}_monitoring_samples[i];
+
+        var gc = 0;
+        var total_mem = 0;
+        for (var j in sample.data) {
+          if (i > 0) {
+            gc += sample.data[j].gc -
+              {{backend}}_monitoring_samples[i - 1].data[j].gc;
+          }
+          total_mem += Math.round(sample.data[j].total_mem / (1024 * 1024));
+        }
+
+        const node_point = {
+          x: sample.timestamp,
+          gc: gc,
+          total_mem: total_mem,
+        };
+        {{backend}}_monitoring_dataset.data.push(node_point);
+
+        {{category}}_monitoring_max_x = Math.max(
+          {{category}}_monitoring_max_x,
+          sample.timestamp);
+      }
+    }
+    {{category}}_ops_data.datasets
+      .push({{backend}}_ops_dataset);
+    {{category}}_monitoring_data.datasets
+      .push({{backend}}_monitoring_dataset);
+    {{/backends}}
+
+    const {{category}}_ops_config = {
+      ...ops_config,
+      ...{ data: {{category}}_ops_data }
     };
+
+    var {{category}}_gc_config = JSON.parse(JSON.stringify(gc_config));
+    {{category}}_gc_config.data = {{category}}_monitoring_data;
+    {{category}}_gc_config.options.scales.x.max =
+      {{category}}_monitoring_max_x;
+
+    var {{category}}_total_mem_config =
+      JSON.parse(JSON.stringify(total_mem_config));
+    {{category}}_total_mem_config.data = {{category}}_monitoring_data;
+    {{category}}_total_mem_config.options.scales.x.max =
+      {{category}}_monitoring_max_x;
+    {{/categories}}
   </script>
 </head>
 <body>
@@ -179,49 +234,42 @@
                     System information
                 </div>
                 <ul class="text-gray-700 text-base">
-                    <li>OS: %OS%</li>
-                    <li>CPU: %CPU%</li>
-                    <li>Number of cores: %CORES%</li>
-                    <li>Memory: %MEMORY%</li>
-                    <li>Erlang: %ERLANG%</li>
+                  <li>OS: {{os}}</li>
+                  <li>CPU: {{cpu_speed}}</li>
+                  <li>Number of cores: {{num_cores}}</li>
+                  <li>Memory: {{available_memory}}</li>
+                  <li>Erlang: {{erlang}}</li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <div class="flex flex-wrap justify-center gap-x-4 gap-y-32">
-      <div class="xl:w-5/12 max-w-screen-md h-96 flex-1">
-        <h2 class="text-2xl font-bold text-center mb-6">Inserts (unclustered)</h2>
-        <canvas id="insert_chart"></canvas>
+    <div class="flex flex-wrap justify-center gap-x-4 gap-y-4 mb-4">
+    {{#categories}}
+      <div class="xl:w-5/12 max-w-screen-md flex-1 p-3 border rounded bg-gray-50 border-gray-400">
+        <h2 class="text-2xl font-bold text-center mb-6">{{name}}</h2>
+        <canvas id="{{category}}_ops_chart" class="mb-6"></canvas>
+        <canvas id="{{category}}_total_mem_chart" class=""></canvas>
+        <canvas id="{{category}}_gc_chart" class=""></canvas>
         <script>
-          const insert_ctx = document.getElementById('insert_chart');
-          const insert_chart = new Chart(insert_ctx, insert_config);
+          const {{category}}_ops_ctx =
+            document.getElementById('{{category}}_ops_chart');
+          const {{category}}_ops_chart =
+            new Chart({{category}}_ops_ctx, {{category}}_ops_config);
+
+          const {{category}}_total_mem_ctx =
+            document.getElementById('{{category}}_total_mem_chart');
+          const {{category}}_total_mem_chart =
+            new Chart({{category}}_total_mem_ctx,
+              {{category}}_total_mem_config);
+
+          const {{category}}_gc_ctx =
+            document.getElementById('{{category}}_gc_chart');
+          const {{category}}_gc_chart =
+            new Chart({{category}}_gc_ctx, {{category}}_gc_config);
         </script>
       </div>
-      <div class="xl:w-5/12 max-w-screen-md h-96 flex-1">
-        <h2 class="text-2xl font-bold text-center mb-6">Inserts (%CLUSTER_SIZE%-node cluster)</h2>
-        <canvas id="insert_clustered_chart"></canvas>
-        <script>
-          const insert_clustered_ctx = document.getElementById('insert_clustered_chart');
-          const insert_clustered_chart = new Chart(insert_clustered_ctx, insert_clustered_config);
-        </script>
-      </div>
-      <div class="xl:w-5/12 max-w-screen-md h-96 flex-1">
-        <h2 class="text-2xl font-bold text-center mb-6">Deletes (unclustered)</h2>
-        <canvas id="delete_chart"></canvas>
-        <script>
-          const delete_ctx = document.getElementById('delete_chart');
-          const delete_chart = new Chart(delete_ctx, delete_config);
-        </script>
-      </div>
-      <div class="xl:w-5/12 max-w-screen-md h-96 flex-1">
-        <h2 class="text-2xl font-bold text-center mb-6">Deletes (%CLUSTER_SIZE%-node cluster)</h2>
-        <canvas id="delete_clustered_chart"></canvas>
-        <script>
-          const delete_clustered_ctx = document.getElementById('delete_clustered_chart');
-          const delete_clustered_chart = new Chart(delete_clustered_ctx, delete_clustered_config);
-        </script>
-      </div>
+    {{/categories}}
     </div>
   </div>
 </body>

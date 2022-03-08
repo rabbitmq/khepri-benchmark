@@ -1,11 +1,13 @@
 {"1.2.0",
-[{<<"argparse">>,{pkg,<<"argparse">>,<<"1.1.4">>},1},
+[{<<"argparse">>,{pkg,<<"argparse">>,<<"1.1.4">>},0},
  {<<"aten">>,{pkg,<<"aten">>,<<"0.5.7">>},2},
+ {<<"bbmustache">>,{pkg,<<"bbmustache">>,<<"1.12.2">>},0},
  {<<"erlperf">>,
   {git,"https://github.com/rabbitmq/erlperf.git",
-       {ref,"925251274d3bef4897f5b947d9bfcdd0deb6bf48"}},
+       {ref,"4cf89bdc3f4e20ed24bfba3be36bf31467f9a83a"}},
   0},
  {<<"gen_batch_server">>,{pkg,<<"gen_batch_server">>,<<"0.8.7">>},2},
+ {<<"jsx">>,{pkg,<<"jsx">>,<<"3.1.0">>},0},
  {<<"khepri">>,
   {git,"https://github.com/rabbitmq/khepri.git",
        {ref,"698c773a98ad92f79200f2e7ef5489646daf2abc"}},
@@ -15,11 +17,15 @@
 {pkg_hash,[
  {<<"argparse">>, <<"A9F83748FABB1AF2A329484434E542FA02ADE6B6FEE58F5EDA15E3E471359992">>},
  {<<"aten">>, <<"F88EB38CEADC0710B84B5D78F0357D766733D80902D50AC69B70CDF834992DAA">>},
+ {<<"bbmustache">>, <<"0CABDCE0DB9FE6D3318131174B9F2B351328A4C0AFBEB3E6E99BB0E02E9B621D">>},
  {<<"gen_batch_server">>, <<"1D91A3605D3110EC791F00D5968E86E62FD4C6979E760796A51D50A7ACC7A40D">>},
+ {<<"jsx">>, <<"D12516BAA0BB23A59BB35DCCAF02A1BD08243FCBB9EFE24F2D9D056CCFF71268">>},
  {<<"ra">>, <<"9EF24AF930C699BCCB12516CA91DB8255093E4DF560BAF54C65D45372E73639E">>}]},
 {pkg_hash_ext,[
  {<<"argparse">>, <<"AC825D3B52CA64F25A4867D70324FBE940ED9BFC2CB9C8826E0B88D7BF7F73F3">>},
  {<<"aten">>, <<"8B623C8BE27B59A911D16AB0AF41777B504C147BC0D60A29015FAB58321C04B0">>},
+ {<<"bbmustache">>, <<"688B33A4D5CC2D51F575ADF0B3683FC40A38314A2F150906EDCFC77F5B577B3B">>},
  {<<"gen_batch_server">>, <<"94A49A528486298B009D2A1B452132C0A0D68B3E89D17D3764CB1EC879B7557A">>},
+ {<<"jsx">>, <<"0C5CC8FDC11B53CC25CF65AC6705AD39E54ECC56D1C22E4ADB8F5A53FB9427F3">>},
  {<<"ra">>, <<"8E3550BE1DF23B5B1BA9D02E0C8C79FEBB8EAE8A6DCBBBA746BD5180F39AEE1C">>}]}
 ].

@@ -24,7 +24,8 @@ insert_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
       runner => fun(_) -> insert_in_khepri() end,
       init => fun() ->
                       setup_khepri(Nodes, Profile),
-                      assert_khepri_is_empty()
+                      assert_khepri_is_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) ->
                       assert_khepri_is_not_empty(),
@@ -37,7 +38,8 @@ insert_benchmark(Nodes, Profile) ->
       runner => fun(_) -> insert_in_khepri(Nodes) end,
       init => fun() ->
                       setup_khepri(Nodes, Profile),
-                      assert_khepri_is_empty()
+                      assert_khepri_is_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) ->
                       assert_khepri_is_not_empty(),
@@ -52,7 +54,8 @@ delete_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
       init => fun() ->
                       setup_khepri(Nodes, Profile),
                       fill_khepri(),
-                      assert_khepri_is_not_empty()
+                      assert_khepri_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) -> stop_khepri(Nodes) end
      };
@@ -63,7 +66,8 @@ delete_benchmark(Nodes, Profile) ->
       init => fun() ->
                       setup_khepri(Nodes, Profile),
                       fill_khepri(),
-                      assert_khepri_is_not_empty()
+                      assert_khepri_is_not_empty(),
+                      khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) -> stop_khepri(Nodes) end
      }.
