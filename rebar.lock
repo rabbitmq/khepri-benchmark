@@ -10,7 +10,7 @@
  {<<"jsx">>,{pkg,<<"jsx">>,<<"3.1.0">>},0},
  {<<"khepri">>,
   {git,"https://github.com/rabbitmq/khepri.git",
-       {ref,"698c773a98ad92f79200f2e7ef5489646daf2abc"}},
+       {ref,"8eb788b36c48fc73bc9dfa4a7f3a9c5719e9924b"}},
   0},
  {<<"ra">>,{pkg,<<"ra">>,<<"2.0.4">>},1}]}.
 [

@@ -36,11 +36,30 @@ cli() ->
 
        #{name => bench_khepri_safe,
          long => "-bench-khepri-safe",
-         help => "Measure performance of Khepri (using safe/default settings)",
+         help =>
+         "Measure insert/delete performance of Khepri "
+         "(using safe/default settings)",
          type => boolean},
        #{name => bench_khepri_unsafe,
          long => "-bench-khepri-unsafe",
-         help => "Measure performance of Khepri (using less safe settings)",
+         help =>
+         "Measure insert/delete performance of Khepri "
+         "(using less safe settings)",
+         type => boolean},
+       #{name => bench_khepri_low_latency,
+         long => "-bench-khepri-local",
+         help =>
+         "Measure query performance of Khepri (local queries)",
+         type => boolean},
+       #{name => bench_khepri_compromise,
+         long => "-bench-khepri-compromise",
+         help =>
+         "Measure query performance of Khepri (leader+consistent queries)",
+         type => boolean},
+       #{name => bench_khepri_consistent,
+         long => "-bench-khepri-consistent",
+         help =>
+         "Measure query performance of Khepri (consistent queries)",
          type => boolean},
        #{name => bench_mnesia,
          long => "-bench-mnesia",
@@ -192,7 +211,8 @@ run(Options) ->
     khepri_benchmark_utils:cleanup_cluster(),
     ok.
 
-list_benchmarks(What, Nodes, Options) ->
+list_benchmarks(What, Nodes, Options)
+  when What =:= inserts orelse What =:= deletes ->
     BenchKhepriSafe = maps:get(bench_khepri_safe, Options, true),
     BenchKhepriUnsafe = maps:get(bench_khepri_unsafe, Options, true),
     BenchMnesia = maps:get(bench_mnesia, Options, true),
@@ -201,10 +221,6 @@ list_benchmarks(What, Nodes, Options) ->
                       BenchKhepriSafe andalso What =:= inserts ->
                           Benchmarks0 ++
                           [khepri_benchmark_khepri:insert_benchmark(
-                             Nodes, safe)];
-                      BenchKhepriSafe andalso What =:= queries ->
-                          Benchmarks0 ++
-                          [khepri_benchmark_khepri:query_benchmark(
                              Nodes, safe)];
                       BenchKhepriSafe andalso What =:= deletes ->
                           Benchmarks0 ++
@@ -218,10 +234,6 @@ list_benchmarks(What, Nodes, Options) ->
                           Benchmarks1 ++
                           [khepri_benchmark_khepri:insert_benchmark(
                              Nodes, unsafe)];
-                      BenchKhepriUnsafe andalso What =:= queries ->
-                          Benchmarks1 ++
-                          [khepri_benchmark_khepri:query_benchmark(
-                             Nodes, unsafe)];
                       BenchKhepriUnsafe andalso What =:= deletes ->
                           Benchmarks1 ++
                           [khepri_benchmark_khepri:delete_benchmark(
@@ -233,16 +245,51 @@ list_benchmarks(What, Nodes, Options) ->
                       BenchMnesia andalso What =:= inserts ->
                           Benchmarks2 ++
                           [khepri_benchmark_mnesia:insert_benchmark(Nodes)];
-                      BenchMnesia andalso What =:= queries ->
-                          Benchmarks2 ++
-                          [khepri_benchmark_mnesia:query_benchmark(Nodes)];
                       BenchMnesia andalso What =:= deletes ->
                           Benchmarks2 ++
                           [khepri_benchmark_mnesia:delete_benchmark(Nodes)];
                       true ->
                           Benchmarks2
                   end,
-    Benchmarks3.
+    Benchmarks3;
+list_benchmarks(queries, Nodes, Options) ->
+    BenchKhepriLowLat = maps:get(bench_khepri_low_latency, Options, true),
+    BenchKhepriCompromise = maps:get(bench_khepri_compromise, Options, true),
+    BenchKhepriConsistent = maps:get(bench_khepri_consistent, Options, true),
+    BenchMnesia = maps:get(bench_mnesia, Options, true),
+    Benchmarks0 = [],
+    Benchmarks1 = if
+                      BenchKhepriLowLat ->
+                          Benchmarks0 ++
+                          [khepri_benchmark_khepri:query_benchmark(
+                             Nodes, low_latency)];
+                      true ->
+                          Benchmarks0
+                  end,
+    Benchmarks2 = if
+                      BenchKhepriCompromise ->
+                          Benchmarks1 ++
+                          [khepri_benchmark_khepri:query_benchmark(
+                             Nodes, compromise)];
+                      true ->
+                          Benchmarks1
+                  end,
+    Benchmarks3 = if
+                      BenchKhepriConsistent ->
+                          Benchmarks2 ++
+                          [khepri_benchmark_khepri:query_benchmark(
+                             Nodes, consistency)];
+                      true ->
+                          Benchmarks2
+                  end,
+    Benchmarks4 = if
+                      BenchMnesia ->
+                          Benchmarks3 ++
+                          [khepri_benchmark_mnesia:query_benchmark(Nodes)];
+                      true ->
+                          Benchmarks3
+                  end,
+    Benchmarks4.
 
 run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions) ->
     run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions, []).

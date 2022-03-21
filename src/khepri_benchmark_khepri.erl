@@ -48,24 +48,24 @@ insert_benchmark(Nodes, Profile) ->
               end
      }.
 
-query_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
+query_benchmark([Node] = Nodes, Favor) when Node =:= node() ->
     #{
-      name => name(Profile),
-      runner => fun(_) -> query_in_khepri() end,
+      name => name(Favor),
+      runner => fun(_) -> query_in_khepri(Favor) end,
       init => fun() ->
-                      setup_khepri(Nodes, Profile),
+                      setup_khepri(Nodes, safe),
                       fill_khepri(),
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
       done => fun(_) -> stop_khepri(Nodes) end
      };
-query_benchmark(Nodes, Profile) ->
+query_benchmark(Nodes, Favor) ->
     #{
-      name => name(Profile),
-      runner => fun(_) -> query_in_khepri(Nodes) end,
+      name => name(Favor),
+      runner => fun(_) -> query_in_khepri(Nodes, Favor) end,
       init => fun() ->
-                      setup_khepri(Nodes, Profile),
+                      setup_khepri(Nodes, safe),
                       fill_khepri(),
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
@@ -103,6 +103,12 @@ name(Profile) ->
 
 setup_khepri(Nodes, Profile) ->
     remove_khepri_dir(Nodes),
+
+    _ = [ok = rpc:call(
+                Node, application, set_env,
+                [ra, wal_max_size_bytes, 64_000_000, [{persistent, true}]])
+         || Node <- Nodes],
+
     case Profile of
         safe ->
             _ = [ok = rpc:call(
@@ -183,16 +189,18 @@ insert_in_khepri(Nodes) ->
                 [?RA_CLUSTER, [?TABLE, Key], #kpayload_data{data = Value}]),
     ok.
 
-query_in_khepri() ->
+query_in_khepri(Favor) ->
     Key = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri_machine:get(?RA_CLUSTER, [?TABLE, Key]),
+    {ok, _} = khepri_machine:get(
+                ?RA_CLUSTER, [?TABLE, Key], #{favor => Favor}),
     ok.
 
-query_in_khepri(Nodes) ->
+query_in_khepri(Nodes, Favor) ->
     Key = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
     {ok, _} = rpc:call(
-                Node, khepri_machine, get, [?RA_CLUSTER, [?TABLE, Key]]),
+                Node, khepri_machine, get,
+                [?RA_CLUSTER, [?TABLE, Key], #{favor => Favor}]),
     ok.
 
 delete_in_khepri() ->

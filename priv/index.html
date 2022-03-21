@@ -118,12 +118,17 @@
     };
 
     const line_colors = {
-      //khepri_safe: 'rgb(75, 192, 192)',   // Green.
-      //khepri_unsafe: 'rgb(54, 162, 235)', // Blue.
-      //mnesia: 'rgb(255, 99, 132)',        // Red.
-      khepri_safe: 'rgb(167, 201, 87)',   // Green.
-      khepri_unsafe: 'rgb(39, 125, 161)', // Blue.
-      mnesia: 'rgb(249, 65, 68)',        // Red.
+      // Green for writes.
+      khepri_safe: '#70E000',
+      khepri_unsafe: '#008000',
+
+      // Blue for reads.
+      khepri_lowlat: '#90E0EF',
+      khepri_compromise: '#00B4D8',
+      khepri_consistency: '#0077B6',
+
+      // Red for Mnesia.
+      mnesia: '#FF6384',
     };
 
     const workers = {{{workers}}};
