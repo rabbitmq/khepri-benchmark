@@ -130,27 +130,26 @@ setup_khepri(Nodes, Profile) ->
          end || Node <- Nodes],
 
     {ok, _} = khepri:start(),
-    _ = [ok = khepri:add_member(?RA_SYSTEM, Node)
+    _ = [ok = khepri_cluster:add_member(?RA_SYSTEM, Node)
          || Node <- Nodes, Node =/= node()],
 
     _ = [begin
              Members = [Member
                         || {_, Member} <-
-                           rpc:call(Node, khepri, members, [?RA_CLUSTER])],
+                           rpc:call(Node,
+                               khepri_cluster, members, [?RA_CLUSTER])],
              ?assertEqual(lists:sort(Nodes), lists:sort(Members))
          end || Node <- Nodes],
     ok.
 
 assert_khepri_is_empty() ->
-    {ok, Result} = khepri_machine:get(
-                     ?RA_CLUSTER, [#if_path_matches{regex = any}]),
+    {ok, Result} = khepri:get(?RA_CLUSTER, [#if_path_matches{regex = any}]),
     Size = maps:size(Result),
     %% There is the root node.
     ?assertEqual(1, Size).
 
 assert_khepri_is_not_empty() ->
-    {ok, Result} = khepri_machine:get(
-                     ?RA_CLUSTER, [#if_path_matches{regex = any}]),
+    {ok, Result} = khepri:get(?RA_CLUSTER, [#if_path_matches{regex = any}]),
     Size = maps:size(Result),
     ?assert(Size > 100).
 
@@ -158,7 +157,7 @@ fill_khepri() ->
     lists:foreach(
       fun(I) ->
               Key = integer_to_binary(I),
-              {ok, _} = khepri_machine:put(?RA_CLUSTER, [?TABLE, Key], none)
+              {ok, _} = khepri:put(?RA_CLUSTER, [?TABLE, Key], none)
       end, lists:seq(1, khepri_benchmark_utils:max_keys())).
 
 stop_khepri(Nodes) ->
@@ -176,8 +175,7 @@ remove_khepri_dir(Nodes) ->
 insert_in_khepri() ->
     Key = khepri_benchmark_utils:get_key(),
     Value = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri_machine:put(
-                ?RA_CLUSTER, [?TABLE, Key], #kpayload_data{data = Value}),
+    {ok, _} = khepri:put(?RA_CLUSTER, [?TABLE, Key], Value),
     ok.
 
 insert_in_khepri(Nodes) ->
@@ -185,13 +183,13 @@ insert_in_khepri(Nodes) ->
     Value = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
     {ok, _} = rpc:call(
-                Node, khepri_machine, put,
-                [?RA_CLUSTER, [?TABLE, Key], #kpayload_data{data = Value}]),
+                Node, khepri, put,
+                [?RA_CLUSTER, [?TABLE, Key], Value]),
     ok.
 
 query_in_khepri(Favor) ->
     Key = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri_machine:get(
+    {ok, _} = khepri:get(
                 ?RA_CLUSTER, [?TABLE, Key], #{favor => Favor}),
     ok.
 
@@ -199,18 +197,18 @@ query_in_khepri(Nodes, Favor) ->
     Key = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
     {ok, _} = rpc:call(
-                Node, khepri_machine, get,
+                Node, khepri, get,
                 [?RA_CLUSTER, [?TABLE, Key], #{favor => Favor}]),
     ok.
 
 delete_in_khepri() ->
     Key = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri_machine:delete(?RA_CLUSTER, [?TABLE, Key]),
+    {ok, _} = khepri:delete(?RA_CLUSTER, [?TABLE, Key]),
     ok.
 
 delete_in_khepri(Nodes) ->
     Key = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
     {ok, _} = rpc:call(
-                Node, khepri_machine, delete, [?RA_CLUSTER, [?TABLE, Key]]),
+                Node, khepri, delete, [?RA_CLUSTER, [?TABLE, Key]]),
     ok.
