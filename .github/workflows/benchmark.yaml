@@ -14,7 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout khepri-benchmark
+        uses: actions/checkout@v3
+
+      - name: Checkout khepri
+        uses: actions/checkout@v3
+        with:
+          repository: rabbitmq/khepri
+          # _checkouts/<dependency> overrides the dependency version defined in
+          # rebar.config for a rebar3 project
+          # https://rebar3.readme.io/docs/dependencies#checkout-dependencies
+          path: _checkouts/khepri
+
       - uses: erlef/setup-beam@v1
         with:
           otp-version: 24
