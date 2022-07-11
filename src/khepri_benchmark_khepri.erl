@@ -169,7 +169,7 @@ stop_khepri(Nodes) ->
     ok.
 
 remove_khepri_dir(Nodes) ->
-    _ = [file:del_dir_r(io_lib:format("~s", [Node])) || Node <- Nodes],
+    _ = [file:del_dir_r(io_lib:format("khepri#~s", [Node])) || Node <- Nodes],
     ok.
 
 insert_in_khepri() ->
