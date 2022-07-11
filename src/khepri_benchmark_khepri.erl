@@ -130,8 +130,10 @@ setup_khepri(Nodes, Profile) ->
          end || Node <- Nodes],
 
     {ok, _} = khepri:start(),
-    _ = [ok = khepri_cluster:add_member(?RA_SYSTEM, Node)
-         || Node <- Nodes, Node =/= node()],
+    _ = [begin
+             {ok, _} = rpc:call(Node, khepri, start, []),
+             ok = rpc:call(Node, khepri_cluster, join, [node()])
+         end || Node <- Nodes, Node =/= node()],
 
     _ = [begin
              Members = [Member
@@ -169,7 +171,7 @@ stop_khepri(Nodes) ->
     ok.
 
 remove_khepri_dir(Nodes) ->
-    _ = [file:del_dir_r(io_lib:format("~s", [Node])) || Node <- Nodes],
+    _ = [file:del_dir_r(io_lib:format("khepri#~s", [Node])) || Node <- Nodes],
     ok.
 
 insert_in_khepri() ->
