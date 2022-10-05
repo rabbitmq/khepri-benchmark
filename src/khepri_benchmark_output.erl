@@ -20,8 +20,12 @@ print_system_info(
     num_cores := NumCores,
     available_memory := AvailableMemory,
     os := OS,
-    erlang := Erlang}) ->
+    erlang := Erlang,
+    datetime := DateTime}) ->
     io:format(
+      "~n"
+      "\033[1mDate and time:\033[0m~n"
+      "  ~ts~n"
       "~n"
       "\033[1mSystem information:\033[0m~n"
       "  OS: ~ts~n"
@@ -29,7 +33,7 @@ print_system_info(
       "  Number of cores: ~b~n"
       "  Memory: ~ts~n"
       "  Erlang: ~ts~n",
-      [OS, CpuSpeed, NumCores, AvailableMemory, Erlang]).
+      [DateTime, OS, CpuSpeed, NumCores, AvailableMemory, Erlang]).
 
 print_results1([{Category, CategoryResults} | Rest] = Results) ->
     Workers = tested_workers(Results),
@@ -132,7 +136,8 @@ generate_html(Options, SystemInfo, Results) ->
       num_cores := NumCores,
       available_memory := AvailableMemory,
       os := OS,
-      erlang := Erlang} = SystemInfo,
+      erlang := Erlang,
+      datetime := DateTime} = SystemInfo,
 
     ClusterSize = maps:get(cluster_size, Options, 3),
     Label = khepri_benchmark_utils:cluster_label(ClusterSize),
@@ -450,6 +455,7 @@ generate_html(Options, SystemInfo, Results) ->
              "num_cores" => NumCores,
              "available_memory" => AvailableMemory,
              "erlang" => Erlang,
+             "datetime" => DateTime,
              "cluster_size" => ClusterSize,
              "workers" => jsx:encode(Workers),
              "categories" => Cats6},
