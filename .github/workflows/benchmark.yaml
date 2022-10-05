@@ -1,11 +1,10 @@
 name: Benchmark
 
-concurrency: 
+concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  pull_request:
   push:
     branches:
       - '*'
@@ -33,12 +32,17 @@ jobs:
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 24
+          otp-version: 25
 
       - name: Compile
         run: rebar3 escriptize
 
+      - name: Short benchmark
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: _build/default/bin/khepri-benchmark --max-workers=1
+
       - name: Benchmark
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: _build/default/bin/khepri-benchmark
 
       - name: Publish
