@@ -122,13 +122,6 @@ setup_khepri(Nodes, Profile) ->
                  || Node <- Nodes]
     end,
 
-    _ = [begin
-             {ok, _} = rpc:call(
-                         Node, application, ensure_all_started,
-                         [ra]),
-             {ok, _} = rpc:call(Node, ra_system, start_default, [])
-         end || Node <- Nodes],
-
     _ = [{ok, ?STORE_ID} = rpc:call(Node, khepri, start, [])
          || Node <- Nodes],
     _ = [ok = rpc:call(Node, khepri_cluster, join, [node()])
@@ -163,10 +156,10 @@ fill_khepri() ->
 
 stop_khepri(Nodes) ->
     _ = [begin
-             ok = rpc:call(Node, khepri_cluster, reset, []),
              ok = rpc:call(Node, khepri_cluster, stop, []),
              ok = rpc:call(Node, application, stop, [khepri]),
-             ok = rpc:call(Node, application, stop, [ra])
+             ok = rpc:call(Node, application, stop, [ra]),
+             ok
          end || Node <- Nodes],
     remove_khepri_dir(Nodes),
     ok.

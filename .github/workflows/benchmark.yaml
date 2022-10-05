@@ -1,9 +1,14 @@
 name: Benchmark
 
+concurrency: 
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 on:
+  pull_request:
   push:
     branches:
-      - 'main'
+      - '*'
 
   repository_dispatch:
     types: [push-in-khepri]
