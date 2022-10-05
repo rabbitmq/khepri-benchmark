@@ -14,7 +14,8 @@ info() ->
       num_cores => num_cores(),
       os => os(),
       available_memory => available_memory(),
-      cpu_speed => cpu_speed()}.
+      cpu_speed => cpu_speed(),
+      datetime => datetime()}.
 
 erlang() ->
     OTPRel = erlang:system_info(otp_release),
@@ -122,3 +123,12 @@ parse_cpu_for("Windows", Output) ->
                          "Name(.*)",
                          [{capture, all_but_first, list}]),
     string:trim(Model).
+
+datetime() ->
+    Unit = second,
+    Timestamp = erlang:system_time(Unit),
+    unicode:characters_to_binary(
+      calendar:system_time_to_rfc3339(
+        Timestamp, [{unit, Unit},
+                    {time_designator, $\s},
+                    {offset, "Z"}])).
