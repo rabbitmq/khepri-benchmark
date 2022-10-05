@@ -137,21 +137,18 @@ setup_khepri(Nodes, Profile) ->
     ok.
 
 assert_khepri_is_empty() ->
-    {ok, Result} = khepri:get(?STORE_ID, [#if_path_matches{regex = any}]),
-    Size = maps:size(Result),
-    %% There is the root node.
-    ?assertEqual(1, Size).
+    {ok, Count} = khepri:count([?KHEPRI_WILDCARD_STAR]),
+    ?assertEqual(0, Count).
 
 assert_khepri_is_not_empty() ->
-    {ok, Result} = khepri:get(?STORE_ID, [#if_path_matches{regex = any}]),
-    Size = maps:size(Result),
-    ?assert(Size > 100).
+    {ok, Count} = khepri:count([?KHEPRI_WILDCARD_STAR_STAR]),
+    ?assert(Count > 100).
 
 fill_khepri() ->
     lists:foreach(
       fun(I) ->
               Key = integer_to_binary(I),
-              {ok, _} = khepri:put(?STORE_ID, [?TABLE, Key], none)
+              ok = khepri:put([?TABLE, Key], none)
       end, lists:seq(1, khepri_benchmark_utils:max_keys())).
 
 stop_khepri(Nodes) ->
@@ -171,40 +168,34 @@ remove_khepri_dir(Nodes) ->
 insert_in_khepri() ->
     Key = khepri_benchmark_utils:get_key(),
     Value = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri:put(?STORE_ID, [?TABLE, Key], Value),
+    ok = khepri:put([?TABLE, Key], Value),
     ok.
 
 insert_in_khepri(Nodes) ->
     Key = khepri_benchmark_utils:get_key(),
     Value = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
-    {ok, _} = rpc:call(
-                Node, khepri, put,
-                [?STORE_ID, [?TABLE, Key], Value]),
+    ok = rpc:call(Node, khepri, put, [[?TABLE, Key], Value]),
     ok.
 
 query_in_khepri(Favor) ->
     Key = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri:get(
-                ?STORE_ID, [?TABLE, Key], #{favor => Favor}),
+    {ok, _} = khepri:get([?TABLE, Key], #{favor => Favor}),
     ok.
 
 query_in_khepri(Nodes, Favor) ->
     Key = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
-    {ok, _} = rpc:call(
-                Node, khepri, get,
-                [?STORE_ID, [?TABLE, Key], #{favor => Favor}]),
+    {ok, _} = rpc:call(Node, khepri, get, [[?TABLE, Key], #{favor => Favor}]),
     ok.
 
 delete_in_khepri() ->
     Key = khepri_benchmark_utils:get_key(),
-    {ok, _} = khepri:delete(?STORE_ID, [?TABLE, Key]),
+    ok = khepri:delete([?TABLE, Key]),
     ok.
 
 delete_in_khepri(Nodes) ->
     Key = khepri_benchmark_utils:get_key(),
     Node = khepri_benchmark_utils:pick_node(Nodes),
-    {ok, _} = rpc:call(
-                Node, khepri, delete, [?STORE_ID, [?TABLE, Key]]),
+    ok = rpc:call(Node, khepri, delete, [[?TABLE, Key]]),
     ok.
