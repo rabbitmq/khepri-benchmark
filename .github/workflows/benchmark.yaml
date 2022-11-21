@@ -34,6 +34,9 @@ jobs:
         with:
           otp-version: 25
 
+      - name: Upgrade Erlang dependencies
+        run: rebar3 upgrade -a
+
       - name: Compile
         run: rebar3 escriptize
 
