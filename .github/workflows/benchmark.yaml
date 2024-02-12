@@ -31,8 +31,10 @@ jobs:
           path: _checkouts/khepri
 
       - uses: erlef/setup-beam@v1
+        id: install-erlang
         with:
-          otp-version: 25
+          otp-version: 26
+          rebar3-version: '3.22.1'
 
       - name: Upgrade Erlang dependencies
         run: rebar3 upgrade -a
