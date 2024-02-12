@@ -128,11 +128,8 @@ setup_khepri(Nodes, Profile) ->
          || Node <- Nodes, Node =/= node()],
 
     _ = [begin
-             Members = [Member
-                        || {_, Member} <-
-                           rpc:call(Node,
-                               khepri_cluster, members, [?STORE_ID])],
-             ?assertEqual(lists:sort(Nodes), lists:sort(Members))
+             {ok, Nodes1} = rpc:call(Node, khepri_cluster, nodes, [?STORE_ID]),
+             ?assertEqual(lists:sort(Nodes), lists:sort(Nodes1))
          end || Node <- Nodes],
     ok.
 
