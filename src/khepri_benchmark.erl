@@ -87,7 +87,7 @@ cli() ->
          long => "-sampling",
          help => "Set the sampling duration in seconds",
          type => {int, [{min, 1}]}},
-       #{name => multiple_of,
+       #{name => workers_bump_step,
          long => "-workers-bump-step",
          help => "Set the number of workers to add after each sampling phase",
          type => {int, [{min, 1}]}}
@@ -194,14 +194,14 @@ run(Options) ->
 
     MaxWorkers = maps:get(max_workers, Options, 200),
     Sampling = maps:get(sampling, Options, 3),
-    MultipleOf = maps:get(multiple_of, Options, 10),
+    WorkersBumpStep = maps:get(workers_bump_step, Options, 10),
     RunOptions = #{warmup => 1,
                    samples => Sampling,
                    report => extended},
     ConcurrencyOptions = #{min => 1,
                            max => MaxWorkers,
                            threshold => MaxWorkers,
-                           multiple_of => MultipleOf},
+                           step => WorkersBumpStep},
 
     Results = run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions),
 
