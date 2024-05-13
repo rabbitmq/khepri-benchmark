@@ -42,8 +42,8 @@ print_results1([{Category, CategoryResults} | Rest] = Results) ->
                            || Concurrency <- [1, 50, 100, lists:max(Workers)],
                               lists:member(Concurrency, Workers)]),
     CategoryResults1 = [{Backend,
-                         [{average(Scores), Concurrency}
-                          || {Scores, Concurrency} <- BackendResults,
+                         [{AvgScore, Concurrency}
+                          || {AvgScore, Concurrency} <- BackendResults,
                              lists:member(Concurrency, WantedConcurrency)]}
                         || {Backend, BackendResults, _} <- CategoryResults],
 
@@ -469,7 +469,7 @@ generate_html(Options, SystemInfo, Results) ->
     Results.
 
 collect_scores(Results, WantedCategory, WantedBackend) ->
-    [average(Scores)
+    [Scores
      || {Category, CategoryResults} <- Results,
         Category =:= WantedCategory,
         {Backend, BackendResults, _Monitoring} <- CategoryResults,
@@ -481,9 +481,6 @@ tested_workers(Results) ->
      || {_Category, CategoryResults} <- [hd(Results)],
         {_Backend, BackendResults, _Monitoring} <- [hd(CategoryResults)],
         {_Scores, Concurrency} <- BackendResults].
-
-average(Scores) ->
-    lists:sum(Scores) div length(Scores).
 
 collect_monitoring(Results, WantedCategory, WantedBackend) ->
     [#{timestamp => Timestamp,
