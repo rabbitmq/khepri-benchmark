@@ -28,6 +28,7 @@ insert_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
                       assert_khepri_is_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) ->
                       assert_khepri_is_not_empty(),
                       stop_khepri(Nodes)
@@ -42,6 +43,7 @@ insert_benchmark(Nodes, Profile) ->
                       assert_khepri_is_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) ->
                       assert_khepri_is_not_empty(),
                       stop_khepri(Nodes)
@@ -58,6 +60,7 @@ query_benchmark([Node] = Nodes, Favor) when Node =:= node() ->
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) -> stop_khepri(Nodes) end
      };
 query_benchmark(Nodes, Favor) ->
@@ -70,6 +73,7 @@ query_benchmark(Nodes, Favor) ->
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) -> stop_khepri(Nodes) end
      }.
 
@@ -83,6 +87,7 @@ delete_benchmark([Node] = Nodes, Profile) when Node =:= node() ->
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) -> stop_khepri(Nodes) end
      };
 delete_benchmark(Nodes, Profile) ->
@@ -95,6 +100,7 @@ delete_benchmark(Nodes, Profile) ->
                       assert_khepri_is_not_empty(),
                       khepri_benchmark_utils:bench_runner_init_done()
               end,
+      init_runner => "runner() -> ok.",
       done => fun(_) -> stop_khepri(Nodes) end
      }.
 

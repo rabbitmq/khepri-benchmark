@@ -71,7 +71,7 @@ setup_cluster(ClusterSize) ->
     [begin
          [Name0, Hostname] = string:split(atom_to_list(node()), "@"),
          Name = lists:flatten(io_lib:format("~s-peer~b", [Name0, I])),
-         {ok, Node} = slave:start_link(Hostname, Name),
+         {ok, _Pid, Node} = peer:start_link(#{host => Hostname, name => Name}),
          rpc:call(Node, code, add_paths, [CodePath]),
          ?assert(is_list(rpc:call(Node, ?MODULE, module_info, []))),
          _ = rpc:call(Node, logger, set_primary_config, [level, error]),
