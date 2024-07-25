@@ -51,11 +51,6 @@ cli() ->
          help =>
          "Measure query performance of Khepri (local queries)",
          type => boolean},
-       #{name => bench_khepri_compromise,
-         long => "-bench-khepri-compromise",
-         help =>
-         "Measure query performance of Khepri (leader+consistent queries)",
-         type => boolean},
        #{name => bench_khepri_consistent,
          long => "-bench-khepri-consistent",
          help =>
@@ -254,7 +249,6 @@ list_benchmarks(What, Nodes, Options)
     Benchmarks3;
 list_benchmarks(queries, Nodes, Options) ->
     BenchKhepriLowLat = maps:get(bench_khepri_low_latency, Options, true),
-    BenchKhepriCompromise = maps:get(bench_khepri_compromise, Options, true),
     BenchKhepriConsistent = maps:get(bench_khepri_consistent, Options, true),
     BenchMnesia = maps:get(bench_mnesia, Options, true),
     Benchmarks0 = [],
@@ -266,21 +260,13 @@ list_benchmarks(queries, Nodes, Options) ->
                       true ->
                           Benchmarks0
                   end,
-    Benchmarks2 = if
-                      BenchKhepriCompromise ->
-                          Benchmarks1 ++
-                          [khepri_benchmark_khepri:query_benchmark(
-                             Nodes, compromise)];
-                      true ->
-                          Benchmarks1
-                  end,
     Benchmarks3 = if
                       BenchKhepriConsistent ->
-                          Benchmarks2 ++
+                          Benchmarks1 ++
                           [khepri_benchmark_khepri:query_benchmark(
                              Nodes, consistency)];
                       true ->
-                          Benchmarks2
+                          Benchmarks1
                   end,
     Benchmarks4 = if
                       BenchMnesia ->
