@@ -103,7 +103,6 @@ print_diagram([], _Concurrency, _MaxLabelLen, _MaxValue) ->
 backend_color("Khepri (safe)") -> "\033[38;2;204;255;51m";
 backend_color("Khepri (unsafe)") -> "\033[38;2;56;176;0m";
 backend_color("Khepri (low_latency)") -> "\033[38;2;144;224;239m";
-backend_color("Khepri (compromise)") -> "\033[38;2;0;180;216m";
 backend_color("Khepri (consistency)") -> "\033[38;2;0;119;182m";
 backend_color("Mnesia") -> "\033[38;2;188;71;73m";
 backend_color(_) -> "".
@@ -192,9 +191,6 @@ generate_html(Options, SystemInfo, Results) ->
                     QueryKhepriLowLat = collect_scores(
                                           Results, "Queries",
                                           "Khepri (low_latency)"),
-                    QueryKhepriCompromise = collect_scores(
-                                              Results, "Queries",
-                                              "Khepri (compromise)"),
                     QueryKhepriConsistent = collect_scores(
                                               Results, "Queries",
                                               "Khepri (consistency)"),
@@ -204,9 +200,6 @@ generate_html(Options, SystemInfo, Results) ->
                     QueryKhepriLowLatMon = collect_monitoring(
                                              Results, "Queries",
                                              "Khepri (low_latency)"),
-                    QueryKhepriCompromiseMon = collect_monitoring(
-                                                 Results, "Queries",
-                                                 "Khepri (compromise)"),
                     QueryKhepriConsistentMon = collect_monitoring(
                                                  Results, "Queries",
                                                  "Khepri (consistency)"),
@@ -222,11 +215,6 @@ generate_html(Options, SystemInfo, Results) ->
                           "ops_samples" => jsx:encode(QueryKhepriLowLat),
                           "monitoring_samples" =>
                           jsx:encode(QueryKhepriLowLatMon)},
-                        #{"backend" => "khepri_compromise",
-                          "name" => "Khepri (compromise)",
-                          "ops_samples" => jsx:encode(QueryKhepriCompromise),
-                          "monitoring_samples" =>
-                          jsx:encode(QueryKhepriCompromiseMon)},
                         #{"backend" => "khepri_consistency",
                           "name" => "Khepri (consistency)",
                           "ops_samples" => jsx:encode(QueryKhepriConsistent),
@@ -339,10 +327,6 @@ generate_html(Options, SystemInfo, Results) ->
                                                    Results,
                                                    "Queries, " ++ Label,
                                                    "Khepri (low_latency)"),
-                    QueryClusteredKhepriCompromise = collect_scores(
-                                                       Results,
-                                                       "Queries, " ++ Label,
-                                                       "Khepri (compromise)"),
                     QueryClusteredKhepriConsistent = collect_scores(
                                                        Results,
                                                        "Queries, " ++ Label,
@@ -356,10 +340,6 @@ generate_html(Options, SystemInfo, Results) ->
                       Results,
                       "Queries, " ++ Label,
                       "Khepri (low_latency)"),
-                    QueryClusteredKhepriCompromiseMon =
-                    collect_monitoring(
-                      Results, "Queries, " ++ Label,
-                      "Khepri (compromise)"),
                     QueryClusteredKhepriConsistentMon =
                     collect_monitoring(
                       Results, "Queries, " ++ Label,
@@ -377,12 +357,6 @@ generate_html(Options, SystemInfo, Results) ->
                           jsx:encode(QueryClusteredKhepriLowLat),
                           "monitoring_samples" =>
                           jsx:encode(QueryClusteredKhepriLowLatMon)},
-                        #{"backend" => "khepri_compromise",
-                          "name" => "Khepri (compromise)",
-                          "ops_samples" =>
-                          jsx:encode(QueryClusteredKhepriCompromise),
-                          "monitoring_samples" =>
-                          jsx:encode(QueryClusteredKhepriCompromiseMon)},
                         #{"backend" => "khepri_consistency",
                           "name" => "Khepri (consistency)",
                           "ops_samples" =>
