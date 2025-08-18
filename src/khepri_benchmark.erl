@@ -283,12 +283,17 @@ run_benchmarks(Benchmarks, RunOptions, ConcurrencyOptions) ->
 
 run_benchmarks(
   [{Name, Nodes, Benchmarks} | Rest],
-  RunOptions, ConcurrencyOptions, Results) ->
+  RunOptions, ConcurrencyOptions, Results)
+  when Benchmarks =/= [] ->
     io:format("~nBenchmarking ~ts:", [Name]),
     Result = run_benchmarks1(
                Benchmarks, Nodes, RunOptions, ConcurrencyOptions, []),
     Results1 = [{Name, Result} | Results],
     run_benchmarks(Rest, RunOptions, ConcurrencyOptions, Results1);
+run_benchmarks(
+  [{_Name, _Nodes, []} | Rest],
+  RunOptions, ConcurrencyOptions, Results) ->
+    run_benchmarks(Rest, RunOptions, ConcurrencyOptions, Results);
 run_benchmarks([], _RunOptions, _ConcurrencyOptions, Results) ->
     lists:reverse(Results).
 
