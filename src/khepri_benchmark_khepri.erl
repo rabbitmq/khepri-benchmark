@@ -142,6 +142,13 @@ setup_khepri(Nodes, Profile) ->
 
 assert_khepri_is_empty() ->
     {ok, Count} = khepri:count([?KHEPRI_WILDCARD_STAR]),
+    case Count of
+        0 ->
+            ok;
+        _ ->
+            Ret = khepri:get_many([?KHEPRI_WILDCARD_STAR]),
+            io:format(standard_error, "~nKhepri not empty!~n~p~n", [Ret])
+    end,
     ?assertEqual(0, Count).
 
 assert_khepri_is_not_empty() ->
