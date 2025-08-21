@@ -163,6 +163,7 @@ fill_khepri() ->
       end, lists:seq(1, khepri_benchmark_utils:max_keys())).
 
 stop_khepri(Nodes) ->
+    ok = rpc:call(hd(Nodes), khepri, delete, [[?TABLE]]),
     _ = [begin
              ok = rpc:call(Node, khepri_cluster, stop, []),
              ok = rpc:call(Node, application, stop, [khepri]),
