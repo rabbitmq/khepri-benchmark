@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout khepri-benchmark
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Checkout khepri
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: rabbitmq/khepri
           # _checkouts/<dependency> overrides the dependency version defined in
@@ -33,8 +33,8 @@ jobs:
       - uses: erlef/setup-beam@v1
         id: install-erlang
         with:
-          otp-version: 26
-          rebar3-version: '3.22.1'
+          otp-version: 29
+          rebar3-version: '3.27.0'
 
       - name: Upgrade Erlang dependencies
         run: rebar3 upgrade -a
